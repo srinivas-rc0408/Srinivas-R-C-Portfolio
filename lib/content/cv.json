@@ -1,0 +1,26 @@
+{
+  "slug": "cv",
+  "title": "Curriculum Vitae",
+  "tagline": "The full academic and professional journey.",
+  "lastUpdated": "2026-06-01",
+  "sections": [
+    {
+      "heading": "Profile",
+      "items": [
+        "Highly motivated AI & ML engineering student specializing in full-stack applications and automated pipelines."
+      ]
+    },
+    {
+      "heading": "Education",
+      "items": [
+        "REVA University - B.Tech Computer Science Engineering (Artificial Intelligence & Machine Learning) | 2023–2027"
+      ]
+    },
+    {
+      "heading": "Leadership & Activities",
+      "items": [
+        "Head of Media at Yantra IoT Club - Led media initiatives and managed event promotion."
+      ]
+    }
+  ]
+}

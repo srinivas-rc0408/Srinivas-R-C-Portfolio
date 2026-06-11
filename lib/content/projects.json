@@ -1,0 +1,43 @@
+{
+  "slug": "projects",
+  "title": "Projects",
+  "tagline": "Code in production.",
+  "lastUpdated": "2026-06-01",
+  "sections": [
+    {
+      "heading": "ArchAgent",
+      "items": [
+        "React 19, TypeScript, Express.js, Supabase, Three.js, Gemini 2.0 Flash.",
+        "Built a sophisticated AI agent architecture for rapid web development."
+      ]
+    },
+    {
+      "heading": "Health Risk MLOps Pipeline",
+      "items": [
+        "MLflow, FastAPI, Docker, GitHub Actions.",
+        "Implemented a scalable machine learning pipeline to predict health risks."
+      ]
+    },
+    {
+      "heading": "Bank Churn System",
+      "items": [
+        "React, TypeScript, Convex.",
+        "Full-stack web application predicting customer churn rates using realtime sync."
+      ]
+    },
+    {
+      "heading": "NLP Language Detector",
+      "items": [
+        "Python, NLP Libraries.",
+        "Trained models to detect spoken/written languages from text snippets with high accuracy."
+      ]
+    },
+    {
+      "heading": "AI-Enhanced Flappy Bird",
+      "items": [
+        "Java, JavaFX.",
+        "Engineered an automated AI controller capable of perfect runs."
+      ]
+    }
+  ]
+}

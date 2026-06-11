@@ -1,0 +1,14 @@
+{
+  "slug": "certifications",
+  "title": "Certifications",
+  "tagline": "Validated expertise.",
+  "lastUpdated": "2026-06-01",
+  "sections": [
+    {
+      "heading": "NPTEL Deep Learning",
+      "items": [
+        "Proctored certification awarded by IIT Ropar."
+      ]
+    }
+  ]
+}

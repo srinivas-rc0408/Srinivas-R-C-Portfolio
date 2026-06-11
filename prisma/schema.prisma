@@ -1,0 +1,100 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  user
+  admin
+}
+
+model User {
+  id            String    @id @default(uuid())
+  name          String
+  email         String    @unique
+  phone         String?
+  passwordHash  String?
+  googleId      String?   @unique
+  githubId      String?   @unique
+  role          Role      @default(user)
+  createdAt     DateTime  @default(now())
+  downloads     DownloadLog[]
+  views         ViewLog[]
+  gameSessions  GameSession[]
+  sessions      Session[]
+}
+
+model Session {
+  id        String   @id @default(uuid())
+  userId    String
+  token     String   @unique
+  expiresAt DateTime
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model DownloadLog {
+  id               String   @id @default(uuid())
+  userId           String?
+  section          String
+  fileName         String
+  downloadedAt     DateTime @default(now())
+  ipAddress        String?
+  userAgent        String?
+  estimatedCompany String?
+  user             User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model ViewLog {
+  id              String   @id @default(uuid())
+  userId          String?
+  guestName       String?
+  section         String
+  viewedAt        DateTime @default(now())
+  durationSeconds Int?
+  user            User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model GameSession {
+  id               String   @id @default(uuid())
+  userId           String?
+  vehicleType      String   @default("car")
+  distanceTraveled Float    @default(0)
+  stopsVisited     String[]
+  durationSeconds  Int?
+  playedAt         DateTime @default(now())
+  user             User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model AdminLog {
+  id           String   @id @default(uuid())
+  action       String
+  targetUserId String?
+  timestamp    DateTime @default(now())
+}
+
+model SystemFlag {
+  id              String   @id @default(uuid())
+  gameEnabled     Boolean  @default(true)
+  gambleEnabled   Boolean  @default(true)
+  maintenanceMode Boolean  @default(false)
+  siteVersion     String   @default("1.0.0")
+  updatedAt       DateTime @default(now()) @updatedAt
+}
+
+model PerformanceMetric {
+  id        String   @id @default(uuid())
+  name      String
+  value     Float
+  rating    String
+  delta     Float
+  path      String
+  timestamp DateTime @default(now())
+}

@@ -1,0 +1,15 @@
+{
+  "slug": "open-source",
+  "title": "Open Source",
+  "tagline": "Building for the community.",
+  "lastUpdated": "2026-06-01",
+  "sections": [
+    {
+      "heading": "GitHub Contributions",
+      "items": [
+        "Actively building and maintaining projects like ArchAgent and MLOps pipelines.",
+        "GitHub Handle: @srinivas-rc0408"
+      ]
+    }
+  ]
+}

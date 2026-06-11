@@ -1,0 +1,16 @@
+{
+  "slug": "contact",
+  "title": "Contact",
+  "tagline": "Let's build something great.",
+  "lastUpdated": "2026-06-01",
+  "sections": [
+    {
+      "heading": "Get in Touch",
+      "items": [
+        "Email: your_email@gmail.com",
+        "LinkedIn: linkedin.com/in/srinivas-rc",
+        "GitHub: github.com/srinivas-rc0408"
+      ]
+    }
+  ]
+}

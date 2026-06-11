@@ -1,0 +1,42 @@
+{
+  "slug": "skills",
+  "title": "Technical Skills",
+  "tagline": "The tools I use to build.",
+  "lastUpdated": "2026-06-01",
+  "sections": [
+    {
+      "heading": "Languages",
+      "items": [
+        "TypeScript",
+        "Python",
+        "Java",
+        "SQL"
+      ]
+    },
+    {
+      "heading": "Frontend",
+      "items": [
+        "React / Next.js",
+        "Tailwind CSS",
+        "Three.js / WebGL"
+      ]
+    },
+    {
+      "heading": "Backend & DevOps",
+      "items": [
+        "Node.js / Express",
+        "FastAPI",
+        "Docker",
+        "PostgreSQL / Prisma"
+      ]
+    },
+    {
+      "heading": "AI & ML",
+      "items": [
+        "MLflow",
+        "Gemini API",
+        "NLP / Deep Learning"
+      ]
+    }
+  ]
+}

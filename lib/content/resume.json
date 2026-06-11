@@ -1,0 +1,34 @@
+{
+  "slug": "resume",
+  "title": "Resume",
+  "tagline": "One page. Everything that matters.",
+  "lastUpdated": "2026-06-01",
+  "sections": [
+    {
+      "heading": "Education",
+      "items": [
+        "B.Tech AI & ML, REVA University, Bengaluru (2023–2027) | SRN: R23EA121"
+      ]
+    },
+    {
+      "heading": "Experience",
+      "items": [
+        "Head of Media, Yantra IoT Club, REVA University - Organized workshops with speakers from major tech companies."
+      ]
+    },
+    {
+      "heading": "Projects",
+      "items": [
+        "ArchAgent - Agentic AI framework with React 19, TS, Supabase, Three.js, Gemini 2.0 Flash.",
+        "Health Risk MLOps Pipeline - FastAPI, Docker, GitHub Actions, MLflow.",
+        "AI-Enhanced Flappy Bird - Java/JavaFX."
+      ]
+    },
+    {
+      "heading": "Skills",
+      "items": [
+        "Python, TypeScript, React, Node.js, FastAPI, Docker, MLflow, PostgreSQL, Three.js, Java"
+      ]
+    }
+  ]
+}
