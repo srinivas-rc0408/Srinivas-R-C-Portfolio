@@ -1,5 +1,6 @@
 import { getSiteConfig } from "@/lib/config";
 import { AlertTriangle } from "lucide-react";
+import Footer from "@/components/layout/Footer";
 
 export default async function PublicLayout({
   children,
@@ -22,5 +23,12 @@ export default async function PublicLayout({
     );
   }
 
-  return <>{children}</>;
+  return (
+    <div className="flex flex-col min-h-screen">
+      <main className="flex-grow">
+        {children}
+      </main>
+      <Footer />
+    </div>
+  );
 }

@@ -1,20 +1,88 @@
 "use client";
 
-import { motion, useReducedMotion } from "framer-motion";
+import { motion, useReducedMotion, useMotionValue, useSpring, useTransform } from "framer-motion";
 import Link from "next/link";
 import { ArrowLeft, FileText, Code2, Scroll, Cpu, Briefcase, GraduationCap, Award, Github, Mail } from "lucide-react";
+import { useRef } from "react";
 
 const sections = [
-  { slug: "resume", name: "Resume", tagline: "One page. Everything that matters.", icon: FileText, color: "group-hover:text-violet-500", border: "group-hover:border-violet-500/50" },
-  { slug: "projects", name: "Projects", tagline: "Code in production.", icon: Code2, color: "group-hover:text-blue-500", border: "group-hover:border-blue-500/50" },
-  { slug: "cv", name: "CV", tagline: "The full academic journey.", icon: Scroll, color: "group-hover:text-teal-500", border: "group-hover:border-teal-500/50" },
-  { slug: "skills", name: "Skills", tagline: "The tools I use to build.", icon: Cpu, color: "group-hover:text-green-500", border: "group-hover:border-green-500/50" },
-  { slug: "experience", name: "Experience", tagline: "Leadership and execution.", icon: Briefcase, color: "group-hover:text-amber-500", border: "group-hover:border-amber-500/50" },
-  { slug: "education", name: "Education", tagline: "Continuous learning.", icon: GraduationCap, color: "group-hover:text-pink-500", border: "group-hover:border-pink-500/50" },
-  { slug: "certifications", name: "Certifications", tagline: "Validated expertise.", icon: Award, color: "group-hover:text-orange-500", border: "group-hover:border-orange-500/50" },
-  { slug: "open-source", name: "Open Source", tagline: "Building for the community.", icon: Github, color: "group-hover:text-gray-400", border: "group-hover:border-gray-400/50" },
-  { slug: "contact", name: "Contact", tagline: "Let's build something great.", icon: Mail, color: "group-hover:text-red-400", border: "group-hover:border-red-400/50" },
+  { slug: "resume", name: "Resume", tagline: "One page. Everything that matters.", icon: FileText, accent: "#8b5cf6" },
+  { slug: "projects", name: "Projects", tagline: "Code in production.", icon: Code2, accent: "#3b82f6" },
+  { slug: "cv", name: "CV", tagline: "The full academic journey.", icon: Scroll, accent: "#14b8a6" },
+  { slug: "skills", name: "Skills", tagline: "The tools I use to build.", icon: Cpu, accent: "#22c55e" },
+  { slug: "experience", name: "Experience", tagline: "Leadership and execution.", icon: Briefcase, accent: "#f59e0b" },
+  { slug: "education", name: "Education", tagline: "Continuous learning.", icon: GraduationCap, accent: "#ec4899" },
+  { slug: "certifications", name: "Certifications", tagline: "Validated expertise.", icon: Award, accent: "#f97316" },
+  { slug: "open-source", name: "Open Source", tagline: "Building for the community.", icon: Github, accent: "#9ca3af" },
+  { slug: "contact", name: "Contact", tagline: "Let's build something great.", icon: Mail, accent: "#f87171" },
 ];
+
+/* ─── 3D Tilt Card with glassmorphism ─── */
+function TiltCard({ section }: { section: typeof sections[0] }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const Icon = section.icon;
+
+  const mouseX = useMotionValue(0);
+  const mouseY = useMotionValue(0);
+
+  const rotateX = useSpring(useTransform(mouseY, [-0.5, 0.5], [6, -6]), { stiffness: 200, damping: 20 });
+  const rotateY = useSpring(useTransform(mouseX, [-0.5, 0.5], [-6, 6]), { stiffness: 200, damping: 20 });
+
+  const handleMouse = (e: React.MouseEvent) => {
+    const el = ref.current;
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
+    mouseX.set((e.clientX - rect.left) / rect.width - 0.5);
+    mouseY.set((e.clientY - rect.top) / rect.height - 0.5);
+  };
+
+  const handleLeave = () => {
+    mouseX.set(0);
+    mouseY.set(0);
+  };
+
+  return (
+    <Link href={`/section/${section.slug}`} className="block h-full group">
+      <motion.div
+        ref={ref}
+        onMouseMove={handleMouse}
+        onMouseLeave={handleLeave}
+        style={{
+          rotateX,
+          rotateY,
+          transformPerspective: 800,
+          willChange: "transform",
+        }}
+        className="bg-white/[0.02] backdrop-blur-xl border border-white/[0.05] rounded-2xl p-8 h-full flex flex-col transition-all duration-300 group-hover:shadow-[0_0_30px_rgba(108,99,255,0.1)] relative overflow-hidden"
+      >
+        {/* Hover border glow */}
+        <div
+          className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"
+          style={{
+            boxShadow: `inset 0 0 0 1px ${section.accent}40`,
+          }}
+        />
+
+        <div className="relative z-10">
+          <Icon
+            size={32}
+            className="mb-6 text-white/40 transition-colors duration-300 group-hover:drop-shadow-lg"
+            style={{ color: undefined }}
+          />
+          {/* Override icon color on hover via parent style */}
+          <style>{`
+            .group:hover [data-icon="${section.slug}"] { color: ${section.accent} !important; }
+          `}</style>
+          <div data-icon={section.slug} className="absolute top-0 left-0">
+            <Icon size={32} className="mb-6 opacity-0 group-hover:opacity-100 transition-opacity duration-300" style={{ color: section.accent }} />
+          </div>
+          <h2 className="font-space text-2xl font-bold text-white mb-2">{section.name}</h2>
+          <p className="text-text-muted">{section.tagline}</p>
+        </div>
+      </motion.div>
+    </Link>
+  );
+}
 
 export default function SectionsBrowser() {
   const shouldReduceMotion = useReducedMotion();
@@ -36,25 +104,33 @@ export default function SectionsBrowser() {
     <div className="min-h-screen relative overflow-hidden">
       {/* Animated CSS Gradient Wash Background */}
       <div 
-        className="fixed inset-0 z-0 opacity-40 mix-blend-screen pointer-events-none"
+        className="fixed inset-0 z-0 opacity-30 pointer-events-none"
         style={{
-          background: "linear-gradient(45deg, #000000, #1A1A2E, #2d1b4e, #0f2c3d)",
+          background: "linear-gradient(45deg, #05050A, #0A0A12, #1a0d2e, #0a1a2a)",
           backgroundSize: "400% 400%",
           animation: "gradientWash 15s ease infinite"
         }}
       />
-      <style dangerouslySetInnerHTML={{__html: `
-        @keyframes gradientWash {
-          0% { background-position: 0% 50%; }
-          50% { background-position: 100% 50%; }
-          100% { background-position: 0% 50%; }
-        }
-      `}} />
+
+      {/* Ambient glow */}
+      <div
+        className="fixed top-1/3 left-1/2 -translate-x-1/2 w-[900px] h-[500px] pointer-events-none z-0"
+        style={{
+          background: "radial-gradient(ellipse at center, rgba(108,99,255,0.06) 0%, transparent 65%)",
+          filter: "blur(80px)",
+        }}
+        aria-hidden="true"
+      />
 
       <div className="relative z-10 max-w-7xl mx-auto px-4 py-12">
-        <Link href="/" className="inline-flex items-center gap-2 text-text-muted hover:text-white transition-colors mb-12">
-          <ArrowLeft size={20} /> Back to Hub
+        {/* Fixed global Back to Home */}
+        <Link
+          href="/"
+          className="fixed top-6 left-6 z-50 inline-flex items-center gap-2 px-4 py-2.5 bg-white/[0.05] backdrop-blur-xl border border-white/[0.08] rounded-full text-text-muted hover:text-white hover:bg-white/[0.1] transition-all duration-300 min-h-[44px] shadow-lg"
+        >
+          <ArrowLeft size={16} /> Home
         </Link>
+
         
         <div className="mb-16">
           <h1 className="font-space text-4xl md:text-5xl font-bold mb-4">Browse Sections</h1>
@@ -70,26 +146,11 @@ export default function SectionsBrowser() {
           animate="show"
           className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"
         >
-          {sections.map((section) => {
-            const Icon = section.icon;
-            return (
-              <motion.div layout key={section.slug} variants={shouldReduceMotion ? {} : itemVars}>
-                <Link href={`/section/${section.slug}`} className="block h-full group">
-                  <div className={`bg-surface/60 backdrop-blur-sm border border-white/5 rounded-2xl p-8 h-full flex flex-col transition-all duration-300 transform group-hover:-translate-y-2 group-hover:shadow-2xl ${section.border} group-hover:bg-surface/90 relative overflow-hidden`}>
-                    
-                    {/* Background glow reveal */}
-                    <div className="absolute inset-0 bg-gradient-to-br from-white/0 to-white/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                    
-                    <div className="relative z-10">
-                      <Icon size={32} className={`mb-6 text-white/50 transition-colors duration-300 ${section.color}`} />
-                      <h2 className="font-space text-2xl font-bold text-white mb-2">{section.name}</h2>
-                      <p className="text-text-muted">{section.tagline}</p>
-                    </div>
-                  </div>
-                </Link>
-              </motion.div>
-            );
-          })}
+          {sections.map((section) => (
+            <motion.div layout key={section.slug} variants={shouldReduceMotion ? {} : itemVars}>
+              <TiltCard section={section} />
+            </motion.div>
+          ))}
         </motion.div>
       </div>
     </div>

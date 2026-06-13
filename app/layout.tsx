@@ -14,6 +14,9 @@ export const metadata: Metadata = {
 };
 
 import WebVitalsTracker from "@/components/analytics/WebVitalsTracker";
+import dynamic from "next/dynamic";
+
+const CustomCursor = dynamic(() => import("@/components/home/CustomCursor"), { ssr: false });
 
 export default function RootLayout({
   children,
@@ -22,7 +25,11 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={`${inter.variable} ${space.variable} ${mono.variable} font-inter antialiased`}>
+      <body className={`${inter.variable} ${space.variable} ${mono.variable} font-space antialiased`}>
+        {/* Global noise grain overlay for premium matte texture */}
+        <div className="noise-overlay" aria-hidden="true" />
+        {/* Custom cursor */}
+        <CustomCursor />
         <WebVitalsTracker />
         <AuthProvider>
           {children}

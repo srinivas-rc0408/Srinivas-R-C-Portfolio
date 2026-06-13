@@ -14,7 +14,9 @@ import ModuleToggles from "@/components/admin/ModuleToggles";
 import ActivityFeed from "@/components/admin/ActivityFeed";
 import PerformanceCharts from "@/components/admin/PerformanceCharts";
 import RecruiterTracker from "@/components/admin/RecruiterTracker";
-import { Briefcase } from "lucide-react";
+import FeedbackInbox from "@/components/admin/FeedbackInbox";
+import FooterLinksManager from "@/components/admin/FooterLinksManager";
+import { Briefcase, MessageSquare, Link as LinkIcon } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
@@ -139,6 +141,12 @@ export default async function AdminDashboard({
           <Link href="/admin?tab=users" className={`flex items-center gap-3 px-4 py-3 rounded-xl font-medium transition-colors ${activeTab === 'users' ? 'bg-accent/10 text-accent' : 'text-text-muted hover:text-white hover:bg-white/5'}`}>
             <Users size={20} /> Users & Logs
           </Link>
+          <Link href="/admin?tab=feedback" className={`flex items-center gap-3 px-4 py-3 rounded-xl font-medium transition-colors ${activeTab === 'feedback' ? 'bg-accent/10 text-accent' : 'text-text-muted hover:text-white hover:bg-white/5'}`}>
+            <MessageSquare size={20} /> Feedback Inbox
+          </Link>
+          <Link href="/admin?tab=footer" className={`flex items-center gap-3 px-4 py-3 rounded-xl font-medium transition-colors ${activeTab === 'footer' ? 'bg-accent/10 text-accent' : 'text-text-muted hover:text-white hover:bg-white/5'}`}>
+            <LinkIcon size={20} /> Footer Links
+          </Link>
           <Link href="/admin?tab=settings" className={`flex items-center gap-3 px-4 py-3 rounded-xl font-medium transition-colors ${activeTab === 'settings' ? 'bg-accent/10 text-accent' : 'text-text-muted hover:text-white hover:bg-white/5'}`}>
             <Settings size={20} /> Settings
           </Link>
@@ -164,6 +172,8 @@ export default async function AdminDashboard({
               {activeTab === 'upload' && "File Hub"}
               {activeTab === 'recruiter' && "Recruiter Intelligence"}
               {activeTab === 'users' && "User Audit"}
+              {activeTab === 'feedback' && "Feedback Inbox"}
+              {activeTab === 'footer' && "Footer Links"}
               {activeTab === 'settings' && "System Settings"}
             </h1>
             <p className="text-text-muted">Welcome back, {session.user.name}.</p>
@@ -225,6 +235,14 @@ export default async function AdminDashboard({
                 <GameLeaderboard sessions={gameSessions} />
               </div>
             </>
+          )}
+
+          {activeTab === 'feedback' && (
+            <FeedbackInbox />
+          )}
+
+          {activeTab === 'footer' && (
+            <FooterLinksManager />
           )}
 
           {activeTab === 'settings' && (

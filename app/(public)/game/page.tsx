@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react";
 import dynamic from "next/dynamic";
-import { useRouter } from "next/navigation";
 import { ArrowLeft, Car, Bus, Bike } from "lucide-react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
@@ -16,7 +15,6 @@ export default function GamePage() {
   const [vehicle, setVehicle] = useState<Vehicle | null>(null);
   const [popupData, setPopupData] = useState<{ stopName: string; slug: string } | null>(null);
   const [gameEnabled, setGameEnabled] = useState(true);
-  const router = useRouter();
 
   useEffect(() => {
     fetch("/api/config")
@@ -85,7 +83,7 @@ export default function GamePage() {
               <button
                 key={v.id}
                 onClick={() => setVehicle(v.id as Vehicle)}
-                className="bg-surface/50 border border-white/10 hover:border-accent hover:bg-surface p-8 rounded-2xl flex flex-col items-center transition-all duration-300 hover:-translate-y-2 group"
+                className="bg-white/[0.02] backdrop-blur-xl border border-white/[0.05] hover:border-accent/40 hover:shadow-[0_0_30px_rgba(108,99,255,0.12)] p-8 rounded-2xl flex flex-col items-center transition-all duration-300 hover:-translate-y-2 group min-h-[44px]"
               >
                 <div className="w-20 h-20 rounded-full bg-background flex items-center justify-center mb-6 border border-white/5 group-hover:shadow-[0_0_20px_rgba(108,99,255,0.4)]">
                   <Icon size={40} className="text-white group-hover:text-accent transition-colors" />
@@ -108,7 +106,7 @@ export default function GamePage() {
       {/* HUD Layer */}
       <div className="absolute inset-0 z-10 pointer-events-none flex flex-col justify-between">
         <div className="p-6">
-          <Link href="/" className="pointer-events-auto inline-flex items-center gap-2 px-4 py-2 bg-surface/80 backdrop-blur border border-white/10 rounded-full text-text-main hover:bg-surface hover:text-white transition-colors shadow-lg">
+          <Link href="/" className="pointer-events-auto inline-flex items-center gap-2 px-4 py-2.5 bg-white/[0.05] backdrop-blur-xl border border-white/[0.08] rounded-full text-text-main hover:bg-white/[0.1] hover:text-white transition-all duration-300 shadow-lg min-h-[44px]">
             <ArrowLeft size={16} /> Exit Game
           </Link>
         </div>
@@ -130,12 +128,12 @@ export default function GamePage() {
                 <p className="text-text-muted text-sm mb-6">
                   You have discovered the {popupData.stopName} sector. Park here to explore deeper.
                 </p>
-                <button
-                  onClick={() => router.push(`/section/${popupData.slug}`)}
-                  className="w-full py-3 bg-accent hover:bg-accent/80 text-white font-medium rounded-xl transition-colors"
+                <Link
+                  href={`/section/${popupData.slug}`}
+                  className="w-full py-3 bg-accent hover:bg-accent/80 text-white font-medium rounded-xl transition-colors text-center block min-h-[44px] flex items-center justify-center"
                 >
                   View Full Section
-                </button>
+                </Link>
               </motion.div>
             )}
           </AnimatePresence>

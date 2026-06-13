@@ -28,7 +28,7 @@ export default function NavigationHub() {
       >
         {config.gameEnabled ? (
           <Link href="/game" className="group focus:outline-none focus:ring-2 focus:ring-accent rounded-2xl" tabIndex={0}>
-            <div className="bg-surface/50 backdrop-blur-sm border border-white/5 rounded-2xl p-8 h-full flex flex-col items-center text-center transition-all duration-300 hover:-translate-y-2 hover:border-accent/50 hover:bg-surface">
+            <div className="bg-white/[0.02] backdrop-blur-xl border border-white/[0.05] rounded-2xl p-8 h-full flex flex-col items-center text-center transition-all duration-300 hover:-translate-y-2 hover:border-accent/40 hover:shadow-[0_0_30px_rgba(108,99,255,0.12)]">
               <div className="w-16 h-16 rounded-full bg-accent/10 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
                 <Gamepad2 className="w-8 h-8 text-accent" />
               </div>
@@ -37,7 +37,7 @@ export default function NavigationHub() {
             </div>
           </Link>
         ) : (
-          <div className="bg-surface/30 backdrop-blur-sm border border-white/5 rounded-2xl p-8 h-full flex flex-col items-center text-center opacity-50 cursor-not-allowed">
+          <div className="bg-white/[0.01] backdrop-blur-xl border border-white/[0.03] rounded-2xl p-8 h-full flex flex-col items-center text-center opacity-50 cursor-not-allowed">
             <div className="w-16 h-16 rounded-full bg-white/5 flex items-center justify-center mb-6">
               <Gamepad2 className="w-8 h-8 text-text-muted" />
             </div>
@@ -52,8 +52,8 @@ export default function NavigationHub() {
             className="group w-full text-left focus:outline-none focus:ring-2 focus:ring-secondary rounded-2xl"
             tabIndex={0}
           >
-            <div className="bg-surface/50 backdrop-blur-sm border border-secondary/40 rounded-2xl p-8 h-full flex flex-col items-center text-center transition-all duration-300 hover:-translate-y-2 hover:bg-surface relative overflow-hidden">
-              <div className="absolute inset-0 border-2 border-secondary rounded-2xl animate-pulse opacity-50"></div>
+            <div className="bg-white/[0.02] backdrop-blur-xl border border-secondary/20 rounded-2xl p-8 h-full flex flex-col items-center text-center transition-all duration-300 hover:-translate-y-2 hover:border-secondary/50 hover:shadow-[0_0_30px_rgba(255,101,132,0.15)] relative overflow-hidden">
+              <div className="absolute inset-0 border border-secondary/30 rounded-2xl animate-pulse opacity-30"></div>
               <div className="w-16 h-16 rounded-full bg-secondary/10 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
                 <Dices className="w-8 h-8 text-secondary" />
               </div>
@@ -62,7 +62,7 @@ export default function NavigationHub() {
             </div>
           </button>
         ) : (
-          <div className="bg-surface/30 backdrop-blur-sm border border-white/5 rounded-2xl p-8 h-full flex flex-col items-center text-center opacity-50 cursor-not-allowed">
+          <div className="bg-white/[0.01] backdrop-blur-xl border border-white/[0.03] rounded-2xl p-8 h-full flex flex-col items-center text-center opacity-50 cursor-not-allowed">
             <div className="w-16 h-16 rounded-full bg-white/5 flex items-center justify-center mb-6">
               <Dices className="w-8 h-8 text-text-muted" />
             </div>
@@ -71,8 +71,8 @@ export default function NavigationHub() {
           </div>
         )}
 
-        <Link href="/sections" className="group focus:outline-none focus:ring-2 focus:ring-primary rounded-2xl" tabIndex={0}>
-          <div className="bg-surface/50 backdrop-blur-sm border border-white/5 rounded-2xl p-8 h-full flex flex-col items-center text-center transition-all duration-300 hover:-translate-y-2 hover:border-primary/50 hover:bg-surface">
+        <Link href="/sections" className="group focus:outline-none focus:ring-2 focus:ring-accent rounded-2xl" tabIndex={0}>
+          <div className="bg-white/[0.02] backdrop-blur-xl border border-white/[0.05] rounded-2xl p-8 h-full flex flex-col items-center text-center transition-all duration-300 hover:-translate-y-2 hover:border-accent/40 hover:shadow-[0_0_30px_rgba(108,99,255,0.12)]">
             <div className="w-16 h-16 rounded-full bg-white/5 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
               <LayoutGrid className="w-8 h-8 text-text-main" />
             </div>

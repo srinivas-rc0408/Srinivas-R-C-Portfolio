@@ -50,7 +50,7 @@ export default function SectionPage({ params }: { params: { slug: string } }) {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
+      <div className="min-h-screen flex items-center justify-center" style={{ background: '#05050A' }}>
         <Loader2 className="w-12 h-12 animate-spin text-accent" />
       </div>
     );
@@ -58,7 +58,7 @@ export default function SectionPage({ params }: { params: { slug: string } }) {
 
   if (!data) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-background">
+      <div className="min-h-screen flex flex-col items-center justify-center" style={{ background: '#05050A' }}>
         <h1 className="text-3xl font-space font-bold mb-4">Section Not Found</h1>
         <Link href="/sections" className="text-accent hover:underline">Return to Browser</Link>
       </div>
@@ -70,9 +70,17 @@ export default function SectionPage({ params }: { params: { slug: string } }) {
       <ThreeBackground colorHex={colorHex} />
 
       <div className="relative z-10 max-w-4xl mx-auto px-4 py-12 sm:py-20">
+        {/* Fixed global Back to Home */}
+        <Link
+          href="/"
+          className="fixed top-6 left-6 z-50 inline-flex items-center gap-2 px-4 py-2.5 bg-white/[0.05] backdrop-blur-xl border border-white/[0.08] rounded-full text-text-muted hover:text-white hover:bg-white/[0.1] transition-all duration-300 min-h-[44px] shadow-lg"
+        >
+          <ArrowLeft size={16} /> Home
+        </Link>
+
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6 mb-16">
           <div>
-            <Link href="/sections" className="inline-flex items-center gap-2 text-text-muted hover:text-white transition-colors mb-8">
+            <Link href="/sections" className="inline-flex items-center gap-2 text-text-muted hover:text-white transition-colors mb-8 min-h-[44px]">
               <ArrowLeft size={20} /> Back to Sections
             </Link>
             <h1 className="font-space text-4xl md:text-6xl font-bold text-white mb-4">
@@ -90,7 +98,7 @@ export default function SectionPage({ params }: { params: { slug: string } }) {
 
         <div className="space-y-12">
           {data.sections?.map((sec: any, idx: number) => (
-            <div key={idx} className="bg-surface/40 backdrop-blur border border-white/5 rounded-2xl p-6 sm:p-8">
+            <div key={idx} className="bg-white/[0.02] backdrop-blur-xl border border-white/[0.05] rounded-2xl p-6 sm:p-8 transition-all duration-300 hover:border-white/[0.1] hover:shadow-[0_0_20px_rgba(108,99,255,0.06)]">
               <h2 className="font-space text-2xl font-bold mb-6" style={{ color: colorHex }}>
                 {sec.heading}
               </h2>

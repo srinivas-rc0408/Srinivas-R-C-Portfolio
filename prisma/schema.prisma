@@ -98,3 +98,32 @@ model PerformanceMetric {
   path      String
   timestamp DateTime @default(now())
 }
+
+model Document {
+  id        String   @id @default(uuid())
+  type      String   @unique
+  fileUrl   String?
+  isPublic  Boolean  @default(false)
+  updatedAt DateTime @default(now()) @updatedAt
+}
+
+model Feedback {
+  id        String   @id @default(uuid())
+  email     String
+  message   String
+  isRead    Boolean  @default(false)
+  isFlagged Boolean  @default(false)
+  guestId   String?
+  createdAt DateTime @default(now())
+}
+
+model FooterLink {
+  id        String   @id @default(uuid())
+  platform  String
+  url       String
+  iconName  String
+  isActive  Boolean  @default(true)
+  order     Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+}

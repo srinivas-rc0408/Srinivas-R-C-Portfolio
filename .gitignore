@@ -33,3 +33,9 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+\n.agent/
+
+dev.db
+prisma/dev.db
+.next_dev.log
+.agent/

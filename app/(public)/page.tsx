@@ -8,6 +8,7 @@ import { ArrowRight } from "lucide-react";
 
 const ParticleBackground = dynamic(() => import("@/components/backgrounds/ParticleBackground"), { ssr: false });
 const GambleModal = dynamic(() => import("@/components/home/GambleModal"), { ssr: false });
+const FeedbackModal = dynamic(() => import("@/components/home/FeedbackModal"), { ssr: false });
 
 export default function Home() {
   const [showGuestPrompt, setShowGuestPrompt] = useState(false);
@@ -36,6 +37,7 @@ export default function Home() {
       <HeroSection />
       <NavigationHub />
       <GambleModal />
+      <FeedbackModal />
 
       {/* Guest Login Prompt - Sticky Bottom Bar */}
       <div 
