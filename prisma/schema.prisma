@@ -1,0 +1,124 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  user
+  admin
+}
+
+model Section {
+  id        String @id
+  title     String
+  items     Json   @default("[]")
+  sortOrder Int    @default(0)
+}
+
+model PortfolioData {
+  id         Int      @id @default(autoincrement())
+  sectionKey String   @unique
+  title      String
+  subtitle   String?
+  metadata   Json     @default("{}")
+  sortOrder  Int      @default(0)
+  isVisible  Boolean  @default(true)
+  updatedAt  DateTime @default(now()) @updatedAt
+}
+
+model SystemLog {
+  id        String   @id @default(uuid())
+  action    String
+  createdAt DateTime @default(now())
+}
+
+model User {
+  id           String        @id @default(uuid())
+  name         String
+  email        String        @unique
+  phone        String?
+  passwordHash String?
+  googleId     String?       @unique
+  githubId     String?       @unique
+  role         Role          @default(user)
+  createdAt    DateTime      @default(now())
+  downloads    DownloadLog[]
+  views        ViewLog[]
+  gameSessions GameSession[]
+  sessions     Session[]
+}
+
+model Session {
+  id        String   @id @default(uuid())
+  userId    String
+  token     String   @unique
+  expiresAt DateTime
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model DownloadLog {
+  id               String   @id @default(uuid())
+  userId           String?
+  section          String
+  fileName         String
+  downloadedAt     DateTime @default(now())
+  ipAddress        String?
+  userAgent        String?
+  estimatedCompany String?
+  user             User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@index([userId])
+}
+
+model ViewLog {
+  id              String   @id @default(uuid())
+  userId          String?
+  guestName       String?
+  section         String
+  viewedAt        DateTime @default(now())
+  durationSeconds Int?
+  user            User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model GameSession {
+  id               String   @id @default(uuid())
+  userId           String?
+  vehicleType      String   @default("car")
+  distanceTraveled Float    @default(0)
+  stopsVisited     String[]
+  durationSeconds  Int?
+  playedAt         DateTime @default(now())
+  user             User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@index([userId])
+}
+
+model Feedback {
+  id        String   @id @default(uuid())
+  email     String
+  message   String
+  isRead    Boolean  @default(false)
+  isFlagged Boolean  @default(false)
+  guestId   String?
+  createdAt DateTime @default(now())
+}
+
+model Document {
+  id        String   @id @default(uuid())
+  type      String   @unique
+  fileUrl   String?
+  isPublic  Boolean  @default(false)
+  updatedAt DateTime @default(now()) @updatedAt
+}
+
+model FooterLink {
+  id        String   @id @default(uuid())
+  platform  String
+  url       String
+  iconName  String
+  isActive  Boolean  @default(true)
+  order     Int      @default(0)
+  updatedAt DateTime @default(now()) @updatedAt
+}

@@ -1,9 +1,6 @@
 import { NextResponse } from "next/server";
 import { Resend } from "resend";
-import sqlite3 from "sqlite3";
-import { open } from "sqlite";
-import path from "path";
-import fs from "fs";
+import { prisma } from "@/lib/db";
 
 /* ═══════════════════════════════════════════════════════════════
    POST /api/share — Automated Email Delivery
@@ -12,14 +9,6 @@ import fs from "fs";
    ═══════════════════════════════════════════════════════════════ */
 
 const resend = new Resend(process.env.RESEND_API_KEY);
-
-// Helper to interact with the SQLite admin log
-async function openDb() {
-  return open({
-    filename: "./data.db",
-    driver: sqlite3.Database,
-  });
-}
 
 export async function POST(request: Request) {
   try {
@@ -33,9 +22,8 @@ export async function POST(request: Request) {
     }
 
     /* 1. Log the request to the internal Admin Dashboard */
-    const db = await openDb();
     const actionLog = `Document Requested: ${documentType} sent to ${recipientEmail}`;
-    await db.run("INSERT INTO system_logs (action) VALUES (?)", [actionLog]);
+    await prisma.systemLog.create({ data: { action: actionLog } });
 
     /* 2. Format the email content professionally */
     const htmlContent = `
@@ -47,7 +35,7 @@ export async function POST(request: Request) {
         <br/>
         <p>Best regards,</p>
         <p><strong>Srinivas R. C.</strong><br/>
-        <span style="color: #666; font-size: 14px;">Senior Full-Stack Architect & AI Engineer</span></p>
+        <span style="color: #666; font-size: 14px;">AI/ML Engineer & Full-Stack Developer</span></p>
       </div>
     `;
 

@@ -1,19 +1,11 @@
 import { NextResponse } from "next/server";
-import sqlite3 from "sqlite3";
-import { open } from "sqlite";
+import { prisma } from "@/lib/db";
 
 /* ═══════════════════════════════════════════════════════════════
    API: /api/socials
    Handles the Master Socials & Footer Engine backend.
-   Persists global footer links to the SQLite 'portfolio_data' table.
+   Persists global footer links to Postgres via Prisma.
    ═══════════════════════════════════════════════════════════════ */
-
-async function openDb() {
-  return open({
-    filename: "./data.db",
-    driver: sqlite3.Database,
-  });
-}
 
 // Default fallback socials
 const DEFAULT_SOCIALS = {
@@ -27,37 +19,16 @@ const DEFAULT_SOCIALS = {
 // GET: Fetch the latest social links
 export async function GET() {
   try {
-    const db = await openDb();
-    
-    // Ensure table exists (fallback)
-    await db.exec(`
-      CREATE TABLE IF NOT EXISTS portfolio_data (
-        id SERIAL PRIMARY KEY,
-        section_key VARCHAR(100) NOT NULL UNIQUE,
-        title VARCHAR(255) NOT NULL,
-        subtitle VARCHAR(500),
-        description TEXT,
-        metadata JSONB DEFAULT '{}',
-        sort_order INTEGER DEFAULT 0,
-        is_visible BOOLEAN DEFAULT TRUE,
-        created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-        updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-      );
-    `);
+    let row = await prisma.portfolioData.findUnique({ where: { sectionKey: "socials" } });
 
-    const row = await db.get("SELECT metadata FROM portfolio_data WHERE section_key = 'socials'");
-    
     if (!row) {
-      // Seed if missing
-      await db.run(
-        "INSERT INTO portfolio_data (section_key, title, metadata) VALUES (?, ?, ?)",
-        ["socials", "Social Links", JSON.stringify(DEFAULT_SOCIALS)]
-      );
+      row = await prisma.portfolioData.create({
+        data: { sectionKey: "socials", title: "Social Links", metadata: DEFAULT_SOCIALS },
+      });
       return NextResponse.json(DEFAULT_SOCIALS);
     }
 
-    const socials = typeof row.metadata === "string" ? JSON.parse(row.metadata) : row.metadata;
-    return NextResponse.json({ ...DEFAULT_SOCIALS, ...socials });
+    return NextResponse.json({ ...DEFAULT_SOCIALS, ...(row.metadata as object) });
   } catch (error) {
     console.error("GET Socials Error:", error);
     return NextResponse.json({ error: "Failed to load socials" }, { status: 500 });
@@ -72,21 +43,11 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Invalid data format. Expected an object." }, { status: 400 });
     }
 
-    const db = await openDb();
-    
-    const row = await db.get("SELECT id FROM portfolio_data WHERE section_key = 'socials'");
-    
-    if (row) {
-      await db.run(
-        "UPDATE portfolio_data SET metadata = ?, updated_at = CURRENT_TIMESTAMP WHERE section_key = 'socials'",
-        [JSON.stringify(socials)]
-      );
-    } else {
-      await db.run(
-        "INSERT INTO portfolio_data (section_key, title, metadata) VALUES (?, ?, ?)",
-        ["socials", "Social Links", JSON.stringify(socials)]
-      );
-    }
+    await prisma.portfolioData.upsert({
+      where: { sectionKey: "socials" },
+      update: { metadata: socials },
+      create: { sectionKey: "socials", title: "Social Links", metadata: socials },
+    });
 
     return NextResponse.json({ success: true, message: "Socials updated successfully." });
   } catch (error) {
