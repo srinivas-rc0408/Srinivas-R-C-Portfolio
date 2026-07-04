@@ -3,7 +3,7 @@
 import { useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
-import { ArrowLeft, ExternalLink, Search, GitBranch, Code2, Check } from "lucide-react";
+import { ArrowLeft, ExternalLink, Search, GitBranch, Code2, Check, X } from "lucide-react";
 import { useScrollStore } from "@/src/contexts/ScrollStore";
 
 /* ═══════════════════════════════════════════════════════════════
@@ -215,6 +215,3 @@ export default function ProjectsPage() {
     </main>
   );
 }
-
-// Ensure X is available for clear search
-import { X } from "lucide-react";

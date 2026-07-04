@@ -14,7 +14,6 @@ import {
   List,
 } from "lucide-react";
 import Link from "next/link";
-import GameFeature from "./components/GameFeature";
 import CaseOpening from "@/src/components/CaseOpening";
 
 /* ─── Constants ─── */
@@ -122,7 +121,6 @@ export default function Home() {
   return (
     <>
       {/* ── Game Feature Modal (non-blocking) ── */}
-      {/* <GameFeature isOpen={gameOpen} onClose={() => setGameOpen(false)} /> */}
       <CaseOpening isOpen={gameOpen} onClose={() => setGameOpen(false)} />
 
       {/* ── Global scrollbar styles ── */}
