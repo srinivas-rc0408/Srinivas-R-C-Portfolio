@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef } from "react";
 import Image from "next/image";
-import { motion, AnimatePresence, useScroll, useTransform } from "framer-motion";
+import { motion, AnimatePresence, useReducedMotion, useScroll, useTransform } from "framer-motion";
 import {
   Menu,
   User,
@@ -15,93 +15,67 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import CaseOpening from "@/src/components/CaseOpening";
-
-/* ─── Constants ─── */
-const HANGING_POSES = new Set([1, 8]);
-const HERO_IMAGES = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 14]; // excludes 11 (bg), 15 (removed), 17 (error)
-
-/* ─── Helpers ─── */
-function pickRandomHanging(): number {
-  const arr = [1, 8];
-  return arr[Math.floor(Math.random() * arr.length)];
-}
-
-function getRandomImage(exclude: number): number {
-  const candidates = HERO_IMAGES.filter((n) => n !== exclude);
-  return candidates[Math.floor(Math.random() * candidates.length)];
-}
+import { ENTRY, CAROUSEL, HAMMOCK, CAROUSEL_INTERVAL_MS, type SpideyAsset } from "@/lib/spiderman-assets";
+import { entryDrop, crossfade, hammockReveal, hammockSway } from "@/lib/spiderman-motion";
 
 /* ─── Component ─── */
 export default function Home() {
-  /*
-   * TIERED STATE MACHINE
-   * ─────────────────────
-   * activeImage  — current displayed image (1–10)
-   * dropKey      — increments to remount the spring container and replay drop
-   * mounted      — client-only flag (avoids hydration mismatch)
-   *
-   * Tier 1 (Entrance):   Mount → random hanging pose, spring drop, web line
-   * Tier 2 (Slideshow):  6s after any drop → cycle 1–10 every 5.5s
-   * Tier 3 (Reset):      Every 60s → interrupt slideshow, force hanging drop
-   */
-  const [activeImage, setActiveImage] = useState(1);
-  const [dropKey, setDropKey] = useState(0);
-  const [mounted, setMounted] = useState(false);
   const [gameOpen, setGameOpen] = useState(false);
-
-  const slideshowRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const reduceMotion = useReducedMotion();
 
-  const isHanging = HANGING_POSES.has(activeImage);
+  /*
+   * SPIDER-MAN HERO STATE — see SPIDERMAN-ASSETS-SPEC.md
+   * 1.png is the locked entry pose (drops once on load). After it settles,
+   * the carousel takes over, cycling CAROUSEL forever — no forced reset.
+   * The starting index is shuffled once per mount so repeat visits vary,
+   * but the style-grouped sequence itself never reorders.
+   */
+  const [isMobile, setIsMobile] = useState(false);
+  const [showCarousel, setShowCarousel] = useState(false);
+  const [carouselStep, setCarouselStep] = useState(0);
+  const [startOffset] = useState(() => Math.floor(Math.random() * CAROUSEL.length));
 
-  /* ── Helper: clear the current slideshow interval ── */
-  const clearSlideshow = useCallback(() => {
-    if (slideshowRef.current) {
-      clearInterval(slideshowRef.current);
-      slideshowRef.current = null;
-    }
+  const activeAsset: SpideyAsset =
+    !showCarousel || isMobile ? ENTRY : CAROUSEL[(startOffset + carouselStep) % CAROUSEL.length];
+
+  /* ── Mobile breakpoint — carousel disabled entirely below 768px ── */
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 767px)");
+    setIsMobile(mq.matches);
+    const handler = (e: MediaQueryListEvent) => setIsMobile(e.matches);
+    mq.addEventListener("change", handler);
+    return () => mq.removeEventListener("change", handler);
   }, []);
 
-  /* ── TIER 1: Mount — pick a random hanging pose ── */
+  /* ── Start the carousel once the entry drop has settled ── */
   useEffect(() => {
-    setActiveImage(pickRandomHanging());
-    setMounted(true);
-  }, []);
+    if (isMobile) return;
+    const startDelay = setTimeout(() => setShowCarousel(true), 6000);
+    return () => clearTimeout(startDelay);
+  }, [isMobile]);
 
-  /* ── TIER 2: Slideshow — starts 6s after each drop ── */
+  /* ── Carousel tick ── */
   useEffect(() => {
-    if (!mounted) return;
+    if (!showCarousel || isMobile) return;
+    const interval = setInterval(() => {
+      setCarouselStep((s) => s + 1);
+    }, CAROUSEL_INTERVAL_MS);
+    return () => clearInterval(interval);
+  }, [showCarousel, isMobile]);
 
-    const startDelay = setTimeout(() => {
-      /* Kick off with an immediate swap */
-      setActiveImage((prev) => getRandomImage(prev));
-
-      slideshowRef.current = setInterval(() => {
-        setActiveImage((prev) => getRandomImage(prev));
-      }, 5500);
-    }, 6000);
-
-    return () => {
-      clearTimeout(startDelay);
-      clearSlideshow();
-    };
-  }, [mounted, dropKey, clearSlideshow]);
-
-  /* ── TIER 3: 60-second reset — force a hanging drop ── */
+  /* ── Preload the next carousel image 1.5s before each swap ── */
   useEffect(() => {
-    if (!mounted) return;
+    if (!showCarousel || isMobile) return;
+    const next = CAROUSEL[(startOffset + carouselStep + 1) % CAROUSEL.length];
+    const timer = setTimeout(() => {
+      new window.Image().src = next.src;
+    }, CAROUSEL_INTERVAL_MS - 1500);
+    return () => clearTimeout(timer);
+  }, [showCarousel, isMobile, carouselStep, startOffset]);
 
-    const resetInterval = setInterval(() => {
-      /* Interrupt the current slideshow */
-      clearSlideshow();
-
-      /* Force a new hanging pose and re-trigger the spring drop */
-      setActiveImage(pickRandomHanging());
-      setDropKey((prev) => prev + 1);
-    }, 60_000);
-
-    return () => clearInterval(resetInterval);
-  }, [mounted, clearSlideshow]);
+  /* ── Hammock: reveal once on scroll, then sway forever (unless reduced motion) ── */
+  const [hammockSwaying, setHammockSwaying] = useState(false);
 
   /* ── Stagger entrance variants ── */
   const containerVariants = {
@@ -276,109 +250,42 @@ export default function Home() {
             </motion.div>
 
             {/* ═══════════════════════════════════════════ */}
-            {/* RIGHT COLUMN — Tiered Spider-Man Physics   */}
+            {/* RIGHT COLUMN — Spider-Man Stage             */}
+            {/* See SPIDERMAN-ASSETS-SPEC.md for every number below. */}
             {/* ═══════════════════════════════════════════ */}
             <div className="relative flex h-full w-full items-center justify-center">
-              {/*
-               * dropKey as the key: when Tier 3 fires, dropKey increments,
-               * React unmounts + remounts this container, and the spring
-               * initial → animate replays the heavy drop from -100vh.
-               */}
               <motion.div
-                key={dropKey}
-                id="character-container"
-                className="relative flex h-full w-full items-center justify-center"
-                initial={{ y: "-100vh" }}
-                animate={{ y: 0 }}
-                transition={{
-                  type: "spring",
-                  mass: 1.5,
-                  stiffness: 45,
-                  damping: 12,
-                }}
+                className="spidey-stage"
+                data-anchor={activeAsset.anchor}
+                initial={reduceMotion ? false : "hidden"}
+                animate="visible"
+                variants={entryDrop}
               >
-                {/*
-                 * SHARED CONTAINER: Groups web line + image so they
-                 * stay locked together for perfect alignment on all
-                 * hanging poses (1, 4, 8).
-                 */}
-                <div className="relative flex h-full w-full flex-col items-center justify-center">
-                  {/* THE WEB LINE — z-0, h-[50%], top-0, only for hanging poses */}
-                  <AnimatePresence>
-                    {[1, 8].includes(activeImage) && (
-                      <motion.div
-                        id="web-string"
-                        key="web-line"
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0, transition: { duration: 0.8 } }}
-                        transition={{ duration: 0.6 }}
-                        className="absolute left-1/2 top-0 z-0 -translate-x-1/2"
-                        style={{
-                          height: "50%",
-                          width: "3px",
-                          background:
-                            "linear-gradient(180deg, rgba(255,255,255,0.3) 0%, rgba(255,255,255,0.8) 40%, rgba(255,255,255,0.95) 70%, rgba(255,255,255,0.6) 100%)",
-                          boxShadow:
-                            "0 0 15px rgba(255,255,255,1), 0 0 30px rgba(255,255,255,0.3)",
-                          borderRadius: "2px",
-                          transformOrigin: "top center",
-                        }}
+                <AnimatePresence mode="popLayout">
+                  <motion.div
+                    key={activeAsset.src}
+                    className="relative"
+                    variants={crossfade}
+                    initial="enter"
+                    animate="center"
+                    exit="exit"
+                    transition={reduceMotion ? { duration: 0 } : undefined}
+                  >
+                    {activeAsset.anchor === "top-web" && (
+                      <div
+                        className="web-line"
+                        style={{ "--web-x": activeAsset.webX } as React.CSSProperties}
                       />
                     )}
-                  </AnimatePresence>
-
-                  {/* THE IMAGE — z-10, -mt-10 so character's hands meet the web line */}
-                  <AnimatePresence mode="popLayout">
-                    <motion.div
-                      key={activeImage}
-                      className="relative z-10 -mt-10 flex items-center justify-center"
-                      initial={{
-                        opacity: 0,
-                        filter: "blur(12px)",
-                        scale: 0.93,
-                        x: 40,
-                      }}
-                      animate={{
-                        opacity: 1,
-                        filter: "blur(0px)",
-                        scale: 1,
-                        x: 0,
-                      }}
-                      exit={{
-                        opacity: 0,
-                        filter: "blur(12px)",
-                        scale: 1.06,
-                        x: -40,
-                      }}
-                      transition={{
-                        duration: 1.2,
-                        ease: [0.25, 0.46, 0.45, 0.94],
-                      }}
-                    >
-                      <Image
-                        src={`/${activeImage}.png`}
-                        alt={`Srinivas R C — pose ${activeImage}`}
-                        width={500}
-                        height={600}
-                        className={`pointer-events-none w-full select-none object-contain ${
-                          activeImage === 17 ? "h-[50vh]" : "h-[80vh]"
-                        }`}
-                        style={{
-                          filter: "drop-shadow(0 8px 50px rgba(140,0,0,0.35))",
-                          objectPosition:
-                            activeImage === 8
-                              ? "75% center"    /* shift 8.png ~1cm to the right */
-                              : activeImage === 17
-                                ? "center 60%"   /* position 17.png nicely */
-                                : "center center",
-                        }}
-                        unoptimized
-                        loading="eager"
-                      />
-                    </motion.div>
-                  </AnimatePresence>
-                </div>
+                    <Image
+                      src={activeAsset.src}
+                      alt="Spider-Man"
+                      width={activeAsset.w}
+                      height={activeAsset.h}
+                      priority={activeAsset.src === ENTRY.src}
+                    />
+                  </motion.div>
+                </AnimatePresence>
               </motion.div>
             </div>
           </div>
@@ -388,8 +295,31 @@ export default function Home() {
         {/* ACTION SECTION                                 */}
         {/* ═══════════════════════════════════════════════ */}
         <section className="relative min-h-screen w-full flex flex-col justify-center items-center py-24 bg-transparent z-20">
+          {/* Hammock — full-bleed scroll reveal, top of this section. Not a background image. */}
+          <motion.div
+            className="w-full"
+            style={{ width: "100vw", transformOrigin: "top center" }}
+            initial={reduceMotion ? false : "hidden"}
+            whileInView={reduceMotion ? undefined : "visible"}
+            animate={reduceMotion ? "visible" : hammockSwaying ? hammockSway : undefined}
+            viewport={{ once: true, amount: 0.35 }}
+            variants={hammockReveal}
+            onAnimationComplete={() => {
+              if (!reduceMotion) setHammockSwaying(true);
+            }}
+          >
+            <Image
+              src={HAMMOCK.src}
+              width={HAMMOCK.w}
+              height={HAMMOCK.h}
+              sizes="100vw"
+              style={{ width: "100%", height: "auto" }}
+              alt=""
+            />
+          </motion.div>
+
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 w-full max-w-7xl px-8">
-            
+
             {/* Card 1: The Game / Chest */}
             <motion.div
               initial={{ opacity: 0, y: 50 }}

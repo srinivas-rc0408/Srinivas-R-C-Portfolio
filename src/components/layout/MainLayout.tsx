@@ -37,7 +37,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
       
       {/* ── Global Background Image (Fades in on scroll) ── */}
       <motion.div 
-        style={{ opacity: backgroundOpacity, backgroundImage: "url('/11.png')" }} 
+        style={{ opacity: backgroundOpacity, backgroundImage: "url('/spiderman/11.png')" }}
         className="fixed inset-0 -z-10 bg-cover bg-center bg-no-repeat pointer-events-none" 
       />
       

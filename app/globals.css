@@ -76,3 +76,48 @@ body {
     background-position: -200% center;
   }
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   SPIDER-MAN STAGE — see SPIDERMAN-ASSETS-SPEC.md §4
+   ═══════════════════════════════════════════════════════════════ */
+/* Spider-Man stage — bottom edge sits at exactly 65vh from viewport top */
+.spidey-stage {
+  position: absolute;
+  right: 4vw;
+  bottom: 35svh;                          /* 100 − 65 */
+  width: clamp(300px, 27vw, 440px);
+  height: 60svh;
+  display: flex;
+  justify-content: center;
+  pointer-events: none;
+  z-index: 5;                             /* above Three.js bg, below header/menu */
+}
+.spidey-stage[data-anchor="bottom"]  { align-items: flex-end; }
+.spidey-stage[data-anchor="top-web"] { align-items: flex-start; }
+
+.spidey-stage img {
+  max-width: 100%;
+  max-height: 100%;
+  width: auto; height: auto;
+  object-fit: contain;
+}
+
+/* Web line — CHILD of the animated element so it bounces with Spider-Man.
+   200vh height guarantees the top never enters the viewport mid-bounce,
+   so it always reads as anchored to the ceiling. */
+.web-line {
+  position: absolute;
+  bottom: calc(100% - 2px);               /* starts where the PNG's web ends */
+  left: calc(var(--web-x) * 100%);        /* --web-x: 0.495 for 1.png, 0.425 for 8.png */
+  transform: translateX(-50%);
+  width: 1.5px;
+  height: 200vh;
+  background: linear-gradient(to top, rgba(255,255,255,0.9), rgba(255,255,255,0.5));
+}
+
+@media (max-width: 767px) {
+  .spidey-stage {
+    width: clamp(180px, 46vw, 280px);
+    bottom: 42svh;                        /* entry lands at 58svh on mobile */
+  }
+}
