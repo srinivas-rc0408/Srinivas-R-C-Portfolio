@@ -16,6 +16,7 @@ import {
   FileText,
   Activity,
   Share2,
+  Users,
 } from "lucide-react";
 import Image from "next/image";
 
@@ -67,6 +68,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     { id: "Resume", icon: <FileText size={16} /> },
     { id: "CV", icon: <FileText size={16} /> },
     { id: "Socials & Footer", icon: <Share2 size={16} /> },
+    { id: "Downloads", icon: <Users size={16} /> },
   ];
 
   return (

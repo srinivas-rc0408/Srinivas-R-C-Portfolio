@@ -15,13 +15,24 @@ import { useAuth } from "@/src/hooks/useAuth";
 interface SignInModalProps {
   isOpen: boolean;
   onClose: () => void;
+  initialTab?: Tab;
+  message?: string;
+  onAuthenticated?: () => void;
 }
 
 type Tab = "guest" | "signin" | "register";
 
-export default function SignInModal({ isOpen, onClose }: SignInModalProps) {
+export default function SignInModal({ isOpen, onClose, initialTab = "guest", message, onAuthenticated }: SignInModalProps) {
   const { isRegistered, displayName, email, refresh, setGuestName } = useAuth();
-  const [tab, setTab] = useState<Tab>("guest");
+  const [tab, setTab] = useState<Tab>(initialTab);
+
+  // Reset to initialTab each time the modal opens (React's "adjust state during render" pattern —
+  // avoids an effect for what's really a derived reaction to the isOpen transition).
+  const [prevIsOpen, setPrevIsOpen] = useState(isOpen);
+  if (isOpen !== prevIsOpen) {
+    setPrevIsOpen(isOpen);
+    if (isOpen) setTab(initialTab);
+  }
 
   return (
     <AnimatePresence>
@@ -58,7 +69,9 @@ export default function SignInModal({ isOpen, onClose }: SignInModalProps) {
                     <Lock size={20} />
                   </div>
                   <h2 className="text-xl font-bold tracking-widest text-white uppercase">Welcome</h2>
-                  <p className="text-xs text-zinc-400 mt-1">Continue as a guest or sign in.</p>
+                  <p className={`text-xs mt-1 ${message ? "font-semibold text-red-400" : "text-zinc-400"}`}>
+                    {message || "Continue as a guest or sign in."}
+                  </p>
                 </div>
 
                 <div className="mb-6 flex rounded-xl border border-white/10 bg-black/30 p-1">
@@ -76,8 +89,12 @@ export default function SignInModal({ isOpen, onClose }: SignInModalProps) {
                 </div>
 
                 {tab === "guest" && <GuestTab onDone={onClose} setGuestName={setGuestName} />}
-                {tab === "signin" && <SignInTab onSuccess={() => { refresh(); onClose(); }} />}
-                {tab === "register" && <RegisterTab onSuccess={() => { refresh(); onClose(); }} />}
+                {tab === "signin" && (
+                  <SignInTab onSuccess={() => { refresh(); onClose(); onAuthenticated?.(); }} />
+                )}
+                {tab === "register" && (
+                  <RegisterTab onSuccess={() => { refresh(); onClose(); onAuthenticated?.(); }} />
+                )}
               </>
             )}
           </motion.div>

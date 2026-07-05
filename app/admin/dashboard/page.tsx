@@ -7,6 +7,7 @@ import TextWorkspace from "@/src/components/admin/TextWorkspace";
 import SocialLinksEditor from "@/src/components/admin/SocialLinksEditor";
 import DocumentWorkspace from "@/src/components/admin/DocumentWorkspace";
 import CertificatesWorkspace from "@/src/components/admin/CertificatesWorkspace";
+import RecruiterTracker from "@/src/components/admin/RecruiterTracker";
 
 /* ═══════════════════════════════════════════════════════════════
    ADMIN_OS DASHBOARD (MASTER ROUTE)
@@ -27,6 +28,7 @@ function DashboardContent() {
       {activeTab === "CV" && <DocumentWorkspace type="cv" />}
       {activeTab === "Certificates" && <CertificatesWorkspace />}
       {activeTab === "Socials & Footer" && <SocialLinksEditor />}
+      {activeTab === "Downloads" && <RecruiterTracker />}
     </AdminLayout>
   );
 }

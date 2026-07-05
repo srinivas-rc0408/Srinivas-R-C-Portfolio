@@ -2,8 +2,9 @@ import { Ratelimit } from "@upstash/ratelimit";
 import { Redis } from "@upstash/redis";
 
 /* ═══════════════════════════════════════════════════════════════
-   RATE LIMITING — 5 login attempts / IP / 15 min via Upstash.
-   Fails open (skips limiting) when Upstash isn't configured yet.
+   RATE LIMITING via Upstash — 5 login attempts / IP / 15 min,
+   20 downloads / user / hour. Fails open when Upstash isn't
+   configured yet (placeholders in .env.local).
    ═══════════════════════════════════════════════════════════════ */
 
 const url = process.env.UPSTASH_REDIS_REST_URL;
@@ -13,12 +14,14 @@ function isUpstashConfigured(): boolean {
   return !!url && !!token && url !== "REPLACE_ME" && token !== "REPLACE_ME";
 }
 
-const loginRateLimit = isUpstashConfigured()
-  ? new Ratelimit({
-      redis: new Redis({ url: url!, token: token! }),
-      limiter: Ratelimit.slidingWindow(5, "15 m"),
-      prefix: "ratelimit:login",
-    })
+const redis = isUpstashConfigured() ? new Redis({ url: url!, token: token! }) : null;
+
+const loginRateLimit = redis
+  ? new Ratelimit({ redis, limiter: Ratelimit.slidingWindow(5, "15 m"), prefix: "ratelimit:login" })
+  : null;
+
+const downloadRateLimit = redis
+  ? new Ratelimit({ redis, limiter: Ratelimit.slidingWindow(20, "1 h"), prefix: "ratelimit:download" })
   : null;
 
 /** True if this IP is still under the login attempt limit. */
@@ -28,6 +31,16 @@ export async function checkLoginRateLimit(ip: string): Promise<boolean> {
     return true;
   }
   const { success } = await loginRateLimit.limit(ip);
+  return success;
+}
+
+/** True if this user is still under the 20/hour download limit. */
+export async function checkDownloadRateLimit(userId: string): Promise<boolean> {
+  if (!downloadRateLimit) {
+    console.warn("Upstash not configured — skipping download rate limit. Set UPSTASH_REDIS_* in .env.local.");
+    return true;
+  }
+  const { success } = await downloadRateLimit.limit(userId);
   return success;
 }
 

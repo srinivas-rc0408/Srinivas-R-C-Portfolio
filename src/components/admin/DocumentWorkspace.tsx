@@ -166,7 +166,7 @@ export default function DocumentWorkspace({ type }: DocumentWorkspaceProps) {
         {data?.isPublic ? "Make Private" : "Make Public"}
       </motion.button>
 
-      <DocumentModal isOpen={viewerOpen} onClose={() => setViewerOpen(false)} type={type} />
+      <DocumentModal isOpen={viewerOpen} onClose={() => setViewerOpen(false)} type={type} gated={false} />
     </div>
   );
 }

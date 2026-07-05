@@ -4,7 +4,8 @@ import { useEffect, useState } from "react";
 import dynamic from "next/dynamic";
 import useSWR from "swr";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Mail, Download, ChevronLeft, ChevronRight, FileX } from "lucide-react";
+import { X, Mail, Download, Loader2, ChevronLeft, ChevronRight, FileX } from "lucide-react";
+import SignInModal from "@/src/components/auth/SignInModal";
 
 /* ═══════════════════════════════════════════════════════════════
    UNIVERSAL DOCUMENT MODAL
@@ -21,6 +22,8 @@ interface DocumentModalProps {
   isOpen: boolean;
   onClose: () => void;
   type: "resume" | "cv";
+  /** Gated (watermarked + logged, registered-users-only) vs a plain direct link. Default true. */
+  gated?: boolean;
 }
 
 interface DocumentData {
@@ -40,16 +43,43 @@ function formatUpdatedDate(iso: string): string {
   return `${date} (${day})`;
 }
 
-export default function DocumentModal({ isOpen, onClose, type }: DocumentModalProps) {
+export default function DocumentModal({ isOpen, onClose, type, gated = true }: DocumentModalProps) {
   const { data } = useSWR<DocumentData>(isOpen ? `/api/documents/${type}` : null, fetcher);
   const [pageNumber, setPageNumber] = useState(1);
   const [numPages, setNumPages] = useState(0);
+  const [downloading, setDownloading] = useState(false);
+  const [showRegisterPrompt, setShowRegisterPrompt] = useState(false);
 
   const fileUrl = data?.fileUrl ?? null;
 
   const handleLoadSuccess = (loadedPages: number) => {
     setNumPages(loadedPages);
     setPageNumber(1);
+  };
+
+  const handleGatedDownload = async () => {
+    if (!fileUrl || downloading) return;
+    setDownloading(true);
+    try {
+      const res = await fetch(`/api/download/${type}`);
+      if (res.status === 401) {
+        setShowRegisterPrompt(true);
+        return;
+      }
+      if (!res.ok) return;
+
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `SrinivasRC_${type}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    } finally {
+      setDownloading(false);
+    }
   };
 
   useEffect(() => {
@@ -151,23 +181,47 @@ export default function DocumentModal({ isOpen, onClose, type }: DocumentModalPr
                   <Mail size={18} />
                 </motion.a>
 
-                <motion.a
-                  href={fileUrl ?? undefined}
-                  download
-                  whileHover={fileUrl ? { y: -3, boxShadow: "0px 10px 20px rgba(220, 38, 38, 0.3)" } : undefined}
-                  whileTap={fileUrl ? { scale: 0.9 } : undefined}
-                  aria-disabled={!fileUrl}
-                  className={`flex items-center justify-center rounded-lg border border-red-500/50 bg-red-500/10 p-2.5 text-red-500 transition-colors ${
-                    fileUrl ? "hover:bg-red-500 hover:text-white" : "pointer-events-none opacity-30"
-                  }`}
-                  title="Download PDF"
-                >
-                  <Download size={18} />
-                </motion.a>
+                {gated ? (
+                  <motion.button
+                    onClick={handleGatedDownload}
+                    disabled={!fileUrl || downloading}
+                    whileHover={fileUrl ? { y: -3, boxShadow: "0px 10px 20px rgba(220, 38, 38, 0.3)" } : undefined}
+                    whileTap={fileUrl ? { scale: 0.9 } : undefined}
+                    className={`flex items-center justify-center rounded-lg border border-red-500/50 bg-red-500/10 p-2.5 text-red-500 transition-colors ${
+                      fileUrl ? "hover:bg-red-500 hover:text-white" : "pointer-events-none opacity-30"
+                    }`}
+                    title="Download PDF"
+                  >
+                    {downloading ? <Loader2 size={18} className="animate-spin" /> : <Download size={18} />}
+                  </motion.button>
+                ) : (
+                  <motion.a
+                    href={fileUrl ?? undefined}
+                    download
+                    whileHover={fileUrl ? { y: -3, boxShadow: "0px 10px 20px rgba(220, 38, 38, 0.3)" } : undefined}
+                    whileTap={fileUrl ? { scale: 0.9 } : undefined}
+                    aria-disabled={!fileUrl}
+                    className={`flex items-center justify-center rounded-lg border border-red-500/50 bg-red-500/10 p-2.5 text-red-500 transition-colors ${
+                      fileUrl ? "hover:bg-red-500 hover:text-white" : "pointer-events-none opacity-30"
+                    }`}
+                    title="Download PDF"
+                  >
+                    <Download size={18} />
+                  </motion.a>
+                )}
               </div>
             </div>
           </motion.div>
         </motion.div>
+      )}
+      {gated && (
+        <SignInModal
+          isOpen={showRegisterPrompt}
+          onClose={() => setShowRegisterPrompt(false)}
+          initialTab="register"
+          message="Register to download"
+          onAuthenticated={handleGatedDownload}
+        />
       )}
     </AnimatePresence>
   );
