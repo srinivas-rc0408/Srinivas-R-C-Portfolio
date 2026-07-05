@@ -13,7 +13,7 @@ export interface PendingChange {
   section: string; // e.g. "Projects", "Education"
   field: string; // e.g. "Short Info"
   status: "Modified" | "Added" | "Deleted";
-  payload: any; // The actual data to be saved
+  payload: unknown; // The actual data to be saved
 }
 
 interface AdminContextProps {

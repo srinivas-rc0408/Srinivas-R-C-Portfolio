@@ -112,7 +112,7 @@ export default function SocialLinksEditor() {
         <Save className="text-red-400 shrink-0 mt-0.5" size={16} />
         <p className="text-xs text-zinc-400 leading-relaxed">
           Modifying any link automatically stages it in the <strong className="text-red-400">Pending Changes</strong> engine. 
-          You must click the "Update Changes All" button in the top header to write these changes to the SQLite database.
+          You must click the &quot;Update Changes All&quot; button in the top header to write these changes to the database.
         </p>
       </div>
 

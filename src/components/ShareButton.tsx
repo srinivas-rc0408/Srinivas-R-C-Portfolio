@@ -51,9 +51,9 @@ export default function ShareButton({ documentType }: ShareButtonProps) {
           setEmail("");
         }, 300); // wait for modal to close before resetting state
       }, 3000);
-    } catch (err: any) {
+    } catch (err) {
       setStatus("error");
-      setErrorMessage(err.message);
+      setErrorMessage(err instanceof Error ? err.message : "An unexpected error occurred.");
     }
   };
 

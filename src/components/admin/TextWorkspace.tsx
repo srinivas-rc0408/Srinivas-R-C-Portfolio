@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { motion } from "framer-motion";
 import { useAdminStore } from "@/src/contexts/AdminStore";
 import { CheckCircle2, History } from "lucide-react";
@@ -32,12 +32,15 @@ export default function TextWorkspace({ sectionTitle }: TextWorkspaceProps) {
   const [isModified, setIsModified] = useState(false);
   const [hasStaged, setHasStaged] = useState(false);
 
-  // Reset state when tab changes
-  useEffect(() => {
+  // Reset state when the tab changes (React's "adjust state during render"
+  // pattern, not an effect — avoids a redundant paint of the stale tab's text).
+  const [prevSectionTitle, setPrevSectionTitle] = useState(sectionTitle);
+  if (sectionTitle !== prevSectionTitle) {
+    setPrevSectionTitle(sectionTitle);
     setCurrentText(MOCK_DATA[sectionTitle] || "");
     setIsModified(false);
     setHasStaged(false);
-  }, [sectionTitle]);
+  }
 
   const handleTextChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const newVal = e.target.value;

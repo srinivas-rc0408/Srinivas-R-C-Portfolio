@@ -129,18 +129,31 @@ export default function CaseOpening({ isOpen, onClose }: CaseOpeningProps) {
 
   const stripX = useMotionValue(0);
 
-  /* ── Reset on open ── */
-  useEffect(() => {
+  /* ── Dismiss ── */
+  const handleDismiss = useCallback(() => {
+    setPhase("CLOSED");
+    setTimeout(() => onClose(), 250);
+  }, [onClose]);
+
+  /* ── Reset on open (React's "adjust state during render" pattern, not an
+     effect — avoids a redundant paint of the previous run's leftover state) ── */
+  const [wasOpen, setWasOpen] = useState(isOpen);
+  if (isOpen !== wasOpen) {
+    setWasOpen(isOpen);
     if (isOpen) {
       setPhase("IDLE");
       setRewardId(null);
       setShaking(false);
       stripX.jump(0);
     }
+  }
+
+  /* ── Stop any running tick interval whenever the modal closes ── */
+  useEffect(() => {
     return () => {
       if (tickTimerRef.current) clearInterval(tickTimerRef.current);
     };
-  }, [isOpen, stripX]);
+  }, [isOpen]);
 
   /* ── Esc key ── */
   useEffect(() => {
@@ -150,8 +163,7 @@ export default function CaseOpening({ isOpen, onClose }: CaseOpeningProps) {
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isOpen, phase]);
+  }, [isOpen, phase, handleDismiss]);
 
   /* ── Lock body scroll ── */
   useEffect(() => {
@@ -223,12 +235,6 @@ export default function CaseOpening({ isOpen, onClose }: CaseOpeningProps) {
       },
     });
   }, [phase, stripX, strip]);
-
-  /* ── Dismiss ── */
-  const handleDismiss = useCallback(() => {
-    setPhase("CLOSED");
-    setTimeout(() => onClose(), 250);
-  }, [onClose]);
 
   /* ── Navigate to reward page ── */
   const handleContinue = useCallback(() => {

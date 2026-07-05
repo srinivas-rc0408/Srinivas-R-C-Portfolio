@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useSyncExternalStore } from "react";
 import Image from "next/image";
 import { motion, AnimatePresence, useReducedMotion, useScroll, useTransform } from "framer-motion";
 import {
@@ -19,6 +19,20 @@ import DocumentModal from "@/src/components/modals/DocumentModal";
 import { ENTRY, CAROUSEL, HAMMOCK, CAROUSEL_INTERVAL_MS, type SpideyAsset } from "@/lib/spiderman-assets";
 import { entryDrop, crossfade, hammockReveal, hammockSway } from "@/lib/spiderman-motion";
 
+/* ── Mobile breakpoint — carousel disabled entirely below 768px ── */
+const MOBILE_QUERY = "(max-width: 767px)";
+function subscribeIsMobile(callback: () => void) {
+  const mq = window.matchMedia(MOBILE_QUERY);
+  mq.addEventListener("change", callback);
+  return () => mq.removeEventListener("change", callback);
+}
+function getIsMobileSnapshot() {
+  return window.matchMedia(MOBILE_QUERY).matches;
+}
+function getIsMobileServerSnapshot() {
+  return false;
+}
+
 /* ─── Component ─── */
 export default function Home() {
   const [gameOpen, setGameOpen] = useState(false);
@@ -33,7 +47,7 @@ export default function Home() {
    * The starting index is shuffled once per mount so repeat visits vary,
    * but the style-grouped sequence itself never reorders.
    */
-  const [isMobile, setIsMobile] = useState(false);
+  const isMobile = useSyncExternalStore(subscribeIsMobile, getIsMobileSnapshot, getIsMobileServerSnapshot);
   const [showCarousel, setShowCarousel] = useState(false);
   const [carouselStep, setCarouselStep] = useState(0);
   const [startOffset] = useState(() => Math.floor(Math.random() * CAROUSEL.length));
@@ -41,14 +55,6 @@ export default function Home() {
   const activeAsset: SpideyAsset =
     !showCarousel || isMobile ? ENTRY : CAROUSEL[(startOffset + carouselStep) % CAROUSEL.length];
 
-  /* ── Mobile breakpoint — carousel disabled entirely below 768px ── */
-  useEffect(() => {
-    const mq = window.matchMedia("(max-width: 767px)");
-    setIsMobile(mq.matches);
-    const handler = (e: MediaQueryListEvent) => setIsMobile(e.matches);
-    mq.addEventListener("change", handler);
-    return () => mq.removeEventListener("change", handler);
-  }, []);
 
   /* ── Start the carousel once the entry drop has settled ── */
   useEffect(() => {

@@ -449,10 +449,10 @@ function DocumentPreview() {
 /** Projects → Grid of project cards */
 function ProjectGrid() {
   const projects = [
-    { name: "NeuroForge", tag: "AI" },
-    { name: "ArchAgent", tag: "Agent" },
-    { name: "Portfolio", tag: "Web" },
-    { name: "DataPipe", tag: "ML" },
+    { name: "NeuroForge", tag: "AI", progress: 82 },
+    { name: "ArchAgent", tag: "Agent", progress: 68 },
+    { name: "Portfolio", tag: "Web", progress: 91 },
+    { name: "DataPipe", tag: "ML", progress: 74 },
   ];
 
   return (
@@ -489,7 +489,7 @@ function ProjectGrid() {
             <motion.div
               className="h-full rounded-full bg-white/10"
               initial={{ width: "0%" }}
-              animate={{ width: `${60 + Math.random() * 35}%` }}
+              animate={{ width: `${project.progress}%` }}
               transition={{
                 duration: 1.2,
                 delay: 1.6 + i * 0.15,
