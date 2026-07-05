@@ -5,6 +5,7 @@ import { motion, AnimatePresence, Variants } from "framer-motion";
 import Link from "next/link";
 import { X, Folder, ChevronDown, Terminal, GraduationCap, Briefcase, Award, FileText, Check } from "lucide-react";
 import { useScrollStore } from "@/src/contexts/ScrollStore";
+import DocumentModal from "@/src/components/modals/DocumentModal";
 
 /* ═══════════════════════════════════════════════════════════════
    SIDE MENU (AAA LAYOUT)
@@ -30,9 +31,15 @@ const itemVariants: Variants = {
 
 export default function SideMenu({ isOpen, onClose }: SideMenuProps) {
   const [projectsExpanded, setProjectsExpanded] = useState(false);
+  const [docType, setDocType] = useState<"resume" | "cv" | null>(null);
   const [visited, setVisited] = useState<Record<string, boolean>>({
     "neuroforge": true,
   });
+
+  const openDocument = (type: "resume" | "cv") => {
+    setDocType(type);
+    onClose();
+  };
   
   const { activeSection } = useScrollStore();
 
@@ -42,6 +49,7 @@ export default function SideMenu({ isOpen, onClose }: SideMenuProps) {
   };
 
   return (
+    <>
     <AnimatePresence mode="wait">
       {isOpen && (
         <>
@@ -140,8 +148,8 @@ export default function SideMenu({ isOpen, onClose }: SideMenuProps) {
               {/* Links: Resume, CV */}
               <motion.div variants={itemVariants} className="flex flex-col gap-2 pb-12">
                 <div className="px-4 mb-2 text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-600">Documents</div>
-                <MenuLink href="/rewards/resume" icon={<FileText size={16} />} label="Resume" isActive={false} onClick={onClose} className="text-zinc-300 hover:text-white" />
-                <MenuLink href="/rewards/cv" icon={<FileText size={16} />} label="Curriculum Vitae" isActive={false} onClick={onClose} className="text-zinc-300 hover:text-white" />
+                <MenuButton icon={<FileText size={16} />} label="Resume" onClick={() => openDocument("resume")} />
+                <MenuButton icon={<FileText size={16} />} label="Curriculum Vitae" onClick={() => openDocument("cv")} />
               </motion.div>
 
             </div>
@@ -149,6 +157,8 @@ export default function SideMenu({ isOpen, onClose }: SideMenuProps) {
         </>
       )}
     </AnimatePresence>
+    <DocumentModal isOpen={!!docType} onClose={() => setDocType(null)} type={docType ?? "resume"} />
+    </>
   );
 }
 
@@ -165,6 +175,18 @@ function MenuLink({ href, icon, label, className = "", isActive, onClick }: { hr
       <span className={isActive ? "text-red-400" : "text-zinc-500"}>{icon}</span>
       {label}
     </Link>
+  );
+}
+
+function MenuButton({ icon, label, onClick }: { icon: React.ReactNode; label: string; onClick: () => void }) {
+  return (
+    <button
+      onClick={onClick}
+      className="flex items-center gap-3 rounded-lg px-4 py-2.5 text-sm font-semibold text-zinc-300 transition-colors hover:bg-white/10 hover:text-white"
+    >
+      <span className="text-zinc-500">{icon}</span>
+      {label}
+    </button>
   );
 }
 

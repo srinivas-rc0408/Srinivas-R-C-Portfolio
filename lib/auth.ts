@@ -1,6 +1,6 @@
 import { SignJWT, jwtVerify } from "jose";
 import { cookies } from "next/headers";
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 
 /* ═══════════════════════════════════════════════════════════════
    AUTH UTILITIES
@@ -76,6 +76,14 @@ export function validateCredentials(
   }
 
   return email === adminEmail && password === adminPassword;
+}
+
+/** Check an API request's session cookie for an admin role. Used by admin-only routes. */
+export async function isAdminRequest(request: NextRequest): Promise<boolean> {
+  const token = request.cookies.get(COOKIE_NAME)?.value;
+  if (!token) return false;
+  const payload = await verifyToken(token);
+  return payload?.role === "admin";
 }
 
 /** Helper: create a JSON error response */

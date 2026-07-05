@@ -19,6 +19,20 @@ model Section {
   sortOrder Int    @default(0)
 }
 
+model Project {
+  id        String   @id @default(uuid())
+  slug      String   @unique
+  title     String
+  shortInfo String
+  longInfo  String
+  githubUrl String
+  reportUrl String?
+  tags      String[]
+  sortOrder Int      @default(0)
+  isVisible Boolean  @default(true)
+  updatedAt DateTime @default(now()) @updatedAt
+}
+
 model PortfolioData {
   id         Int      @id @default(autoincrement())
   sectionKey String   @unique
@@ -111,6 +125,16 @@ model Document {
   fileUrl   String?
   isPublic  Boolean  @default(false)
   updatedAt DateTime @default(now()) @updatedAt
+}
+
+model Certificate {
+  id            String   @id @default(uuid())
+  name          String
+  imageUrl      String
+  completedYear Int
+  sortOrder     Int      @default(0)
+  isPublic      Boolean  @default(true)
+  createdAt     DateTime @default(now())
 }
 
 model FooterLink {

@@ -5,6 +5,8 @@ import AdminLayout from "@/src/components/admin/AdminLayout";
 import ProjectsWorkspace from "@/src/components/admin/ProjectsWorkspace";
 import TextWorkspace from "@/src/components/admin/TextWorkspace";
 import SocialLinksEditor from "@/src/components/admin/SocialLinksEditor";
+import DocumentWorkspace from "@/src/components/admin/DocumentWorkspace";
+import CertificatesWorkspace from "@/src/components/admin/CertificatesWorkspace";
 
 /* ═══════════════════════════════════════════════════════════════
    ADMIN_OS DASHBOARD (MASTER ROUTE)
@@ -18,14 +20,12 @@ function DashboardContent() {
   return (
     <AdminLayout>
       {activeTab === "Projects" && <ProjectsWorkspace />}
-      {(activeTab === "Education" || 
-        activeTab === "Experience" || 
-        activeTab === "Achievements" || 
-        activeTab === "Certificates" || 
-        activeTab === "Resume" || 
-        activeTab === "CV") && (
+      {(activeTab === "Education" || activeTab === "Experience" || activeTab === "Achievements") && (
         <TextWorkspace sectionTitle={activeTab} />
       )}
+      {activeTab === "Resume" && <DocumentWorkspace type="resume" />}
+      {activeTab === "CV" && <DocumentWorkspace type="cv" />}
+      {activeTab === "Certificates" && <CertificatesWorkspace />}
       {activeTab === "Socials & Footer" && <SocialLinksEditor />}
     </AdminLayout>
   );

@@ -15,12 +15,14 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import CaseOpening from "@/src/components/CaseOpening";
+import DocumentModal from "@/src/components/modals/DocumentModal";
 import { ENTRY, CAROUSEL, HAMMOCK, CAROUSEL_INTERVAL_MS, type SpideyAsset } from "@/lib/spiderman-assets";
 import { entryDrop, crossfade, hammockReveal, hammockSway } from "@/lib/spiderman-motion";
 
 /* ─── Component ─── */
 export default function Home() {
   const [gameOpen, setGameOpen] = useState(false);
+  const [resumeOpen, setResumeOpen] = useState(false);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const reduceMotion = useReducedMotion();
 
@@ -96,6 +98,7 @@ export default function Home() {
     <>
       {/* ── Game Feature Modal (non-blocking) ── */}
       <CaseOpening isOpen={gameOpen} onClose={() => setGameOpen(false)} />
+      <DocumentModal isOpen={resumeOpen} onClose={() => setResumeOpen(false)} type="resume" />
 
       {/* ── Global scrollbar styles ── */}
       <style jsx global>{`
@@ -189,6 +192,7 @@ export default function Home() {
               >
                 <motion.button
                   id="btn-resume"
+                  onClick={() => setResumeOpen(true)}
                   whileHover={{
                     scale: 1.03,
                     borderColor: "rgba(255,255,255,0.6)",
