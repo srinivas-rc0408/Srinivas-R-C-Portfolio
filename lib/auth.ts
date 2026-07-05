@@ -10,6 +10,10 @@ import { NextRequest, NextResponse } from "next/server";
 const COOKIE_NAME = "srinivas_admin_session";
 const TOKEN_EXPIRY = "24h";
 
+const USER_COOKIE_NAME = "srinivas_user_session";
+const USER_TOKEN_EXPIRY = "30d";
+const USER_COOKIE_MAX_AGE = 60 * 60 * 24 * 30;
+
 function getSecret() {
   const secret = process.env.JWT_SECRET;
   if (!secret) throw new Error("JWT_SECRET not configured");
@@ -26,13 +30,13 @@ export async function createToken(email: string): Promise<string> {
     .sign(getSecret());
 }
 
-/** Verify a JWT token, returns the payload or null */
+/** Verify a JWT token (admin or visitor), returns the payload or null */
 export async function verifyToken(
   token: string
-): Promise<{ email: string; role: string } | null> {
+): Promise<{ email: string; role: string; name?: string; sub?: string } | null> {
   try {
     const { payload } = await jwtVerify(token, getSecret());
-    return payload as { email: string; role: string };
+    return payload as { email: string; role: string; name?: string; sub?: string };
   } catch {
     return null;
   }
@@ -60,6 +64,41 @@ export async function getSessionCookie(): Promise<string | undefined> {
 export async function clearSessionCookie() {
   const cookieStore = await cookies();
   cookieStore.delete(COOKIE_NAME);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   VISITOR AUTH — separate cookie/JWT from the admin session above.
+   ═══════════════════════════════════════════════════════════════ */
+
+/** Sign a 30-day JWT for a registered visitor */
+export async function createUserToken(user: { id: string; email: string; name: string }): Promise<string> {
+  return new SignJWT({ email: user.email, name: user.name, role: "user" })
+    .setProtectedHeader({ alg: "HS256" })
+    .setIssuedAt()
+    .setExpirationTime(USER_TOKEN_EXPIRY)
+    .setSubject(user.id)
+    .sign(getSecret());
+}
+
+export async function setUserSessionCookie(token: string) {
+  const cookieStore = await cookies();
+  cookieStore.set(USER_COOKIE_NAME, token, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+    path: "/",
+    maxAge: USER_COOKIE_MAX_AGE,
+  });
+}
+
+export async function getUserSessionCookie(): Promise<string | undefined> {
+  const cookieStore = await cookies();
+  return cookieStore.get(USER_COOKIE_NAME)?.value;
+}
+
+export async function clearUserSessionCookie() {
+  const cookieStore = await cookies();
+  cookieStore.delete(USER_COOKIE_NAME);
 }
 
 /** Validate credentials against env vars */
@@ -91,4 +130,4 @@ export function authError(message: string, status: number = 401) {
   return NextResponse.json({ error: message }, { status });
 }
 
-export { COOKIE_NAME };
+export { COOKIE_NAME, USER_COOKIE_NAME };

@@ -6,6 +6,7 @@ import { User, Zap, ArrowLeft, Home } from "lucide-react";
 import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
 import SignInModal from "@/src/components/auth/SignInModal";
+import { useAuth } from "@/src/hooks/useAuth";
 
 /* ═══════════════════════════════════════════════════════════════
    NAVBAR (AAA LAYOUT)
@@ -21,6 +22,8 @@ export default function Navbar({ onMenuTrigger }: NavbarProps) {
   const router = useRouter();
   const pathname = usePathname();
   const [isSignInOpen, setIsSignInOpen] = useState(false);
+  const { displayName } = useAuth();
+  const firstName = displayName?.split(" ")[0];
 
   const showBackButton = pathname !== "/";
 
@@ -90,7 +93,7 @@ export default function Navbar({ onMenuTrigger }: NavbarProps) {
             className="flex items-center gap-2 rounded-lg bg-white/10 px-5 py-2 text-xs font-semibold uppercase tracking-widest text-white transition-colors duration-300 hover:bg-white hover:text-black shadow-lg"
           >
             <User size={14} />
-            <span className="hidden sm:inline">Sign In</span>
+            <span className="hidden sm:inline">{firstName || "Sign In"}</span>
           </motion.button>
         </div>
         
