@@ -10,7 +10,7 @@ Rule: one phase per session. Verify in browser → commit → push → tick the 
 - [ ] **🚀 DEPLOY CHECKPOINT:** Vercel live, URL on resume. Same day Phase 6 passes.
 - [x] **Phase 7 — Visitor auth:** guest (localStorage) vs registered (email/password, bcrypt 12, jose JWT). No OAuth in v1.
 - [x] **Phase 8 — Gated downloads:** pdf-lib watermark + footer stamp, DownloadLog + estimatedCompany (port RecruiterTracker from `main`), register-to-download modal, rate limits.
-- [ ] **Phase 9 — Nav & feedback:** /api/feedback + admin inbox, visited-✓ menu marks, scroll-to-top, real last-updated stamp.
+- [x] **Phase 9 — Nav & feedback:** /api/feedback + admin inbox, visited-✓ menu marks, scroll-to-top, real last-updated stamp.
 - [ ] **Phase 10 — Game + hero videos:** Phaser driving game complete w/ unlock popups, joystick, minimap, GameSession logs; record 10s demos; hero popup cards.
 - [ ] **Phase 11 — AI chatbot:** "Ask AI abt me", grounded strictly in content/, rate-limited.
 

@@ -1,10 +1,12 @@
 "use client";
 
 import { useState } from "react";
+import useSWR from "swr";
 import { motion, AnimatePresence, Variants } from "framer-motion";
 import Link from "next/link";
 import { X, Folder, ChevronDown, Terminal, GraduationCap, Briefcase, Award, FileText, Check } from "lucide-react";
 import { useScrollStore } from "@/src/contexts/ScrollStore";
+import { useVisited } from "@/src/hooks/useVisited";
 import DocumentModal from "@/src/components/modals/DocumentModal";
 
 /* ═══════════════════════════════════════════════════════════════
@@ -17,6 +19,13 @@ interface SideMenuProps {
   isOpen: boolean;
   onClose: () => void;
 }
+
+interface ProjectSummary {
+  slug: string;
+  title: string;
+}
+
+const fetcher = (url: string) => fetch(url).then((r) => r.json());
 
 const menuVariants: Variants = {
   hidden: { x: "-100%", transition: { ease: [0.22, 1, 0.36, 1], duration: 0.5 } },
@@ -32,19 +41,23 @@ const itemVariants: Variants = {
 export default function SideMenu({ isOpen, onClose }: SideMenuProps) {
   const [projectsExpanded, setProjectsExpanded] = useState(false);
   const [docType, setDocType] = useState<"resume" | "cv" | null>(null);
-  const [visited, setVisited] = useState<Record<string, boolean>>({
-    "neuroforge": true,
-  });
+  const { data: projects } = useSWR<ProjectSummary[]>("/api/projects", fetcher);
+  const { visited, markVisited } = useVisited();
 
   const openDocument = (type: "resume" | "cv") => {
     setDocType(type);
     onClose();
   };
-  
+
   const { activeSection } = useScrollStore();
 
-  const markVisited = (id: string) => {
-    setVisited(prev => ({ ...prev, [id]: true }));
+  const visitProject = (slug: string) => {
+    markVisited(`projects:${slug}`);
+    onClose();
+  };
+
+  const visitSection = (id: string) => {
+    markVisited(id);
     onClose();
   };
 
@@ -83,11 +96,11 @@ export default function SideMenu({ isOpen, onClose }: SideMenuProps) {
             </div>
 
             {/* Menu Items (Staggered & Masked) */}
-            <div 
+            <div
               className="flex-1 overflow-y-auto custom-scrollbar overflow-x-hidden pr-2 px-6 py-8 flex flex-col gap-6"
               style={{ maskImage: 'linear-gradient(to bottom, black 90%, transparent 100%)', WebkitMaskImage: 'linear-gradient(to bottom, black 90%, transparent 100%)' }}
             >
-              
+
               {/* Pinned Items */}
               <motion.div variants={itemVariants} className="flex flex-col gap-2">
                 <Link
@@ -125,9 +138,15 @@ export default function SideMenu({ isOpen, onClose }: SideMenuProps) {
                       exit={{ height: 0, opacity: 0 }}
                       className="overflow-hidden flex flex-col gap-1 pl-9 pr-2 mt-1"
                     >
-                      <ProjectLink id="neuroforge" label="NeuroForge Engine" visited={!!visited["neuroforge"]} isActive={activeSection === "neuroforge"} onClick={() => markVisited("neuroforge")} />
-                      <ProjectLink id="portfoliov2" label="Portfolio V2 Shell" visited={!!visited["portfoliov2"]} isActive={activeSection === "portfoliov2"} onClick={() => markVisited("portfoliov2")} />
-                      <ProjectLink id="archagent" label="ArchAgent AI" visited={!!visited["archagent"]} isActive={activeSection === "archagent"} onClick={() => markVisited("archagent")} />
+                      {(projects ?? []).map((project) => (
+                        <ProjectLink
+                          key={project.slug}
+                          slug={project.slug}
+                          label={project.title}
+                          visited={!!visited[`projects:${project.slug}`]}
+                          onClick={() => visitProject(project.slug)}
+                        />
+                      ))}
                     </motion.div>
                   )}
                 </AnimatePresence>
@@ -138,9 +157,9 @@ export default function SideMenu({ isOpen, onClose }: SideMenuProps) {
               {/* Links: Education, Certifications, Experience */}
               <motion.div variants={itemVariants} className="flex flex-col gap-2">
                 <div className="px-4 mb-2 text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-600">Quick Links</div>
-                <MenuLink href="/details#experience" icon={<Briefcase size={16} />} label="Experience" isActive={activeSection === "experience"} onClick={onClose} />
-                <MenuLink href="/details#education" icon={<GraduationCap size={16} />} label="Education" isActive={activeSection === "education"} onClick={onClose} />
-                <MenuLink href="/details#certifications" icon={<Award size={16} />} label="Certifications" isActive={activeSection === "certifications"} onClick={onClose} />
+                <MenuLink href="/details#experience" icon={<Briefcase size={16} />} label="Experience" isActive={activeSection === "experience"} visited={!!visited.experience} onClick={() => visitSection("experience")} />
+                <MenuLink href="/details#education" icon={<GraduationCap size={16} />} label="Education" isActive={activeSection === "education"} visited={!!visited.education} onClick={() => visitSection("education")} />
+                <MenuLink href="/details#certifications" icon={<Award size={16} />} label="Certifications" isActive={activeSection === "certifications"} visited={!!visited.certifications} onClick={() => visitSection("certifications")} />
               </motion.div>
 
               <motion.div variants={itemVariants} className="h-[1px] w-full shrink-0 bg-white/5" />
@@ -163,17 +182,20 @@ export default function SideMenu({ isOpen, onClose }: SideMenuProps) {
 }
 
 /* ── HELPERS ── */
-function MenuLink({ href, icon, label, className = "", isActive, onClick }: { href: string; icon: React.ReactNode; label: string; className?: string; isActive: boolean; onClick: () => void }) {
+function MenuLink({ href, icon, label, className = "", isActive, visited, onClick }: { href: string; icon: React.ReactNode; label: string; className?: string; isActive: boolean; visited: boolean; onClick: () => void }) {
   return (
     <Link
       href={href}
       onClick={onClick}
-      className={`flex items-center gap-3 rounded-lg px-4 py-2.5 text-sm font-semibold transition-colors hover:bg-white/10 ${
+      className={`flex items-center justify-between gap-3 rounded-lg px-4 py-2.5 text-sm font-semibold transition-colors hover:bg-white/10 ${
         isActive ? "bg-red-500/10 text-red-400" : className || "text-zinc-400 hover:text-zinc-100"
       }`}
     >
-      <span className={isActive ? "text-red-400" : "text-zinc-500"}>{icon}</span>
-      {label}
+      <span className="flex items-center gap-3">
+        <span className={isActive ? "text-red-400" : "text-zinc-500"}>{icon}</span>
+        {label}
+      </span>
+      {visited && !isActive && <Check size={12} className="text-emerald-500 shrink-0" />}
     </Link>
   );
 }
@@ -190,18 +212,15 @@ function MenuButton({ icon, label, onClick }: { icon: React.ReactNode; label: st
   );
 }
 
-function ProjectLink({ id, label, visited, isActive, onClick }: { id: string; label: string; visited: boolean; isActive: boolean; onClick: () => void }) {
+function ProjectLink({ slug, label, visited, onClick }: { slug: string; label: string; visited: boolean; onClick: () => void }) {
   return (
     <Link
-      href={`/details#${id}`}
+      href={`/projects/${slug}`}
       onClick={onClick}
-      className={`flex items-center justify-between rounded-md py-2 px-3 text-xs font-medium transition-colors hover:bg-white/5 hover:text-zinc-300 ${
-        isActive ? "bg-red-500/10 text-red-400" : "text-zinc-500"
-      }`}
+      className="flex items-center justify-between rounded-md py-2 px-3 text-xs font-medium text-zinc-500 transition-colors hover:bg-white/5 hover:text-zinc-300"
     >
       <span className="truncate">{label}</span>
-      {visited && !isActive && <Check size={12} className="text-emerald-500 shrink-0" />}
-      {isActive && <div className="h-1.5 w-1.5 rounded-full bg-red-500 shrink-0" />}
+      {visited && <Check size={12} className="text-emerald-500 shrink-0" />}
     </Link>
   );
 }

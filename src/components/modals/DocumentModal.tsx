@@ -6,6 +6,7 @@ import useSWR from "swr";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Mail, Download, Loader2, ChevronLeft, ChevronRight, FileX } from "lucide-react";
 import SignInModal from "@/src/components/auth/SignInModal";
+import { formatDateWithDay } from "@/lib/formatDate";
 
 /* ═══════════════════════════════════════════════════════════════
    UNIVERSAL DOCUMENT MODAL
@@ -35,13 +36,6 @@ interface DocumentData {
 const TITLES: Record<DocumentModalProps["type"], string> = { resume: "Resume", cv: "CV" };
 
 const fetcher = (url: string) => fetch(url).then((r) => (r.ok ? r.json() : null));
-
-function formatUpdatedDate(iso: string): string {
-  const d = new Date(iso);
-  const date = new Intl.DateTimeFormat("en-US", { day: "numeric", month: "short", year: "numeric" }).format(d);
-  const day = new Intl.DateTimeFormat("en-US", { weekday: "long" }).format(d);
-  return `${date} (${day})`;
-}
 
 export default function DocumentModal({ isOpen, onClose, type, gated = true }: DocumentModalProps) {
   const { data } = useSWR<DocumentData>(isOpen ? `/api/documents/${type}` : null, fetcher);
@@ -167,7 +161,7 @@ export default function DocumentModal({ isOpen, onClose, type, gated = true }: D
             {/* ── Action Footer ── */}
             <div className="flex shrink-0 items-center justify-between border-t border-white/5 bg-black/80 px-6 py-4 backdrop-blur-md">
               <div className="text-xs font-semibold tracking-wide text-zinc-500">
-                {data?.updatedAt ? `Updated on ${formatUpdatedDate(data.updatedAt)}` : ""}
+                {data?.updatedAt ? `Updated on ${formatDateWithDay(data.updatedAt)}` : ""}
               </div>
 
               <div className="flex items-center gap-4">

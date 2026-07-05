@@ -1,11 +1,11 @@
 "use client";
 
-import { useState } from "react";
 import { usePathname } from "next/navigation";
 import { motion, useScroll, useTransform } from "framer-motion";
 import Navbar from "./Navbar";
 import SideMenu from "./SideMenu";
 import Footer from "./Footer";
+import { useScrollStore } from "@/src/contexts/ScrollStore";
 
 /* ═══════════════════════════════════════════════════════════════
    MAIN LAYOUT SHELL (AAA LAYOUT)
@@ -14,7 +14,7 @@ import Footer from "./Footer";
    ═══════════════════════════════════════════════════════════════ */
 
 export default function MainLayout({ children }: { children: React.ReactNode }) {
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const { isMenuOpen, openMenu, closeMenu } = useScrollStore();
   const pathname = usePathname();
 
   const { scrollY } = useScroll();
@@ -45,10 +45,10 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
       <div className="fixed inset-0 -z-10 bg-gradient-to-b from-[#050508] via-black/40 to-black/80 pointer-events-none" />
 
       {/* ── Top Navigation ── */}
-      <Navbar onMenuTrigger={() => setIsMenuOpen(true)} />
+      <Navbar onMenuTrigger={openMenu} />
 
       {/* ── Slide-out Hamburger Menu ── */}
-      <SideMenu isOpen={isMenuOpen} onClose={() => setIsMenuOpen(false)} />
+      <SideMenu isOpen={isMenuOpen} onClose={closeMenu} />
 
       {/* ── Main Content Area ── */}
       <main className="flex-1 w-full relative z-10 flex flex-col">

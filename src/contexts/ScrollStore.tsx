@@ -11,15 +11,27 @@ import React, { createContext, useContext, useState, ReactNode } from "react";
 interface ScrollContextProps {
   activeSection: string;
   setActiveSection: (sectionId: string) => void;
+  isMenuOpen: boolean;
+  openMenu: () => void;
+  closeMenu: () => void;
 }
 
 const ScrollContext = createContext<ScrollContextProps | undefined>(undefined);
 
 export function ScrollProvider({ children }: { children: ReactNode }) {
   const [activeSection, setActiveSection] = useState("");
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   return (
-    <ScrollContext.Provider value={{ activeSection, setActiveSection }}>
+    <ScrollContext.Provider
+      value={{
+        activeSection,
+        setActiveSection,
+        isMenuOpen,
+        openMenu: () => setIsMenuOpen(true),
+        closeMenu: () => setIsMenuOpen(false),
+      }}
+    >
       {children}
     </ScrollContext.Provider>
   );

@@ -8,6 +8,7 @@ import SocialLinksEditor from "@/src/components/admin/SocialLinksEditor";
 import DocumentWorkspace from "@/src/components/admin/DocumentWorkspace";
 import CertificatesWorkspace from "@/src/components/admin/CertificatesWorkspace";
 import RecruiterTracker from "@/src/components/admin/RecruiterTracker";
+import FeedbackInbox from "@/src/components/admin/FeedbackInbox";
 
 /* ═══════════════════════════════════════════════════════════════
    ADMIN_OS DASHBOARD (MASTER ROUTE)
@@ -29,6 +30,7 @@ function DashboardContent() {
       {activeTab === "Certificates" && <CertificatesWorkspace />}
       {activeTab === "Socials & Footer" && <SocialLinksEditor />}
       {activeTab === "Downloads" && <RecruiterTracker />}
+      {activeTab === "Feedback" && <FeedbackInbox />}
     </AdminLayout>
   );
 }

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import useSWR from "swr";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAdminStore } from "@/src/contexts/AdminStore";
 import {
@@ -17,8 +18,15 @@ import {
   Activity,
   Share2,
   Users,
+  Mail,
 } from "lucide-react";
 import Image from "next/image";
+
+interface FeedbackRow {
+  isRead: boolean;
+}
+
+const fetcher = (url: string) => fetch(url).then((r) => r.json());
 
 /* ═══════════════════════════════════════════════════════════════
    ADMIN LAYOUT SHELL
@@ -31,6 +39,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [isInfoOpen, setIsInfoOpen] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
+  const { data: feedback } = useSWR<FeedbackRow[]>("/api/feedback", fetcher);
+  const unreadFeedbackCount = feedback?.filter((f) => !f.isRead).length ?? 0;
 
   const handleUpdateAll = async () => {
     if (pendingChanges.length === 0) return;
@@ -76,6 +86,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     { id: "CV", icon: <FileText size={16} /> },
     { id: "Socials & Footer", icon: <Share2 size={16} /> },
     { id: "Downloads", icon: <Users size={16} /> },
+    { id: "Feedback", icon: <Mail size={16} /> },
   ];
 
   return (
@@ -105,6 +116,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 >
                   {item.icon}
                   {item.id}
+                  {item.id === "Feedback" && unreadFeedbackCount > 0 && (
+                    <span className="ml-auto flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1.5 text-[10px] font-bold text-white">
+                      {unreadFeedbackCount}
+                    </span>
+                  )}
                 </button>
               ))}
             </nav>

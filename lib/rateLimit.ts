@@ -3,8 +3,9 @@ import { Redis } from "@upstash/redis";
 
 /* ═══════════════════════════════════════════════════════════════
    RATE LIMITING via Upstash — 5 login attempts / IP / 15 min,
-   20 downloads / user / hour. Fails open when Upstash isn't
-   configured yet (placeholders in .env.local).
+   20 downloads / user / hour, 3 feedback submissions / IP / hour.
+   Fails open when Upstash isn't configured yet (placeholders in
+   .env.local).
    ═══════════════════════════════════════════════════════════════ */
 
 const url = process.env.UPSTASH_REDIS_REST_URL;
@@ -24,6 +25,10 @@ const downloadRateLimit = redis
   ? new Ratelimit({ redis, limiter: Ratelimit.slidingWindow(20, "1 h"), prefix: "ratelimit:download" })
   : null;
 
+const feedbackRateLimit = redis
+  ? new Ratelimit({ redis, limiter: Ratelimit.slidingWindow(3, "1 h"), prefix: "ratelimit:feedback" })
+  : null;
+
 /** True if this IP is still under the login attempt limit. */
 export async function checkLoginRateLimit(ip: string): Promise<boolean> {
   if (!loginRateLimit) {
@@ -41,6 +46,16 @@ export async function checkDownloadRateLimit(userId: string): Promise<boolean> {
     return true;
   }
   const { success } = await downloadRateLimit.limit(userId);
+  return success;
+}
+
+/** True if this IP is still under the 3/hour feedback submission limit. */
+export async function checkFeedbackRateLimit(ip: string): Promise<boolean> {
+  if (!feedbackRateLimit) {
+    console.warn("Upstash not configured — skipping feedback rate limit. Set UPSTASH_REDIS_* in .env.local.");
+    return true;
+  }
+  const { success } = await feedbackRateLimit.limit(ip);
   return success;
 }
 

@@ -12,12 +12,14 @@ import {
   Gamepad2,
   Package,
   List,
+  ArrowUp,
 } from "lucide-react";
 import Link from "next/link";
 import CaseOpening from "@/src/components/CaseOpening";
 import DocumentModal from "@/src/components/modals/DocumentModal";
 import { ENTRY, CAROUSEL, HAMMOCK, CAROUSEL_INTERVAL_MS, type SpideyAsset } from "@/lib/spiderman-assets";
 import { entryDrop, crossfade, hammockReveal, hammockSway } from "@/lib/spiderman-motion";
+import { useScrollStore } from "@/src/contexts/ScrollStore";
 
 /* ── Mobile breakpoint — carousel disabled entirely below 768px ── */
 const MOBILE_QUERY = "(max-width: 767px)";
@@ -39,6 +41,9 @@ export default function Home() {
   const [resumeOpen, setResumeOpen] = useState(false);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const reduceMotion = useReducedMotion();
+  const { openMenu } = useScrollStore();
+
+  const scrollToTop = () => window.scrollTo({ top: 0, behavior: "smooth" });
 
   /*
    * SPIDER-MAN HERO STATE — see SPIDERMAN-ASSETS-SPEC.md
@@ -327,6 +332,33 @@ export default function Home() {
               alt=""
             />
           </motion.div>
+
+          {/* ── Sticky mini-header ── */}
+          <div className="sticky top-0 z-30 mb-12 flex w-full items-center justify-between border-b border-white/5 bg-black/60 px-6 py-4 backdrop-blur-xl md:px-12">
+            <div className="flex items-center gap-3 text-xs font-bold uppercase tracking-widest text-zinc-300">
+              <span>SRINIVAS R.C</span>
+              <span className="text-zinc-600">·</span>
+              <span className="text-zinc-500">Bengaluru</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <motion.button
+                whileTap={{ scale: 0.95 }}
+                onClick={openMenu}
+                className="rounded-lg p-2 text-zinc-400 transition-colors hover:bg-white/10 hover:text-white"
+                aria-label="Open menu"
+              >
+                <Menu size={18} />
+              </motion.button>
+              <motion.button
+                whileTap={{ scale: 0.95 }}
+                onClick={scrollToTop}
+                className="rounded-lg p-2 text-zinc-400 transition-colors hover:bg-white/10 hover:text-white"
+                aria-label="Scroll to top"
+              >
+                <ArrowUp size={18} />
+              </motion.button>
+            </div>
+          </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 w-full max-w-7xl px-8">
 

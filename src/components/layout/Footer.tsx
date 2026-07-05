@@ -1,9 +1,12 @@
 "use client";
 
+import { useState } from "react";
 import { Mail, Gamepad2, Loader2 } from "lucide-react";
 import { FaInstagram, FaLinkedin, FaGithub } from "react-icons/fa";
 import { motion } from "framer-motion";
 import useSWR from "swr";
+import FeedbackModal from "@/src/components/modals/FeedbackModal";
+import { formatDateWithDay } from "@/lib/formatDate";
 
 /* ═══════════════════════════════════════════════════════════════
    FOOTER (AAA LAYOUT)
@@ -14,6 +17,7 @@ import useSWR from "swr";
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
 export default function Footer() {
+  const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
   const { data: socials, isLoading } = useSWR("/api/socials", fetcher, {
     fallbackData: {
       Instagram: "https://instagram.com",
@@ -23,6 +27,7 @@ export default function Footer() {
       Steam: "https://steamcommunity.com",
     }
   });
+  const { data: lastUpdated } = useSWR<{ updatedAt: string }>("/api/last-updated", fetcher);
 
   const socialIcons = [
     { name: "Instagram", icon: <FaInstagram size={18} />, href: socials?.Instagram },
@@ -32,15 +37,9 @@ export default function Footer() {
     { name: "Steam", icon: <Gamepad2 size={18} />, href: socials?.Steam },
   ];
 
-  // Dynamic Date formatting
-  const lastUpdated = new Date().toLocaleDateString("en-US", {
-    month: "long",
-    year: "numeric",
-  });
-
   return (
     <footer className="w-full relative z-30 bg-black/50 backdrop-blur-xl border-t border-white/10 py-8 flex flex-col items-center gap-6 mt-auto">
-      
+
       {/* ── Social Icons ── */}
       <div className="flex items-center gap-6">
         {isLoading ? (
@@ -69,22 +68,22 @@ export default function Footer() {
       </div>
 
       {/* ── Feedback Button ── */}
-      <button
-        onClick={() => {
-          // Future integration: Open Feedback Modal
-          alert("Feedback Modal (Sprint 3) triggered!");
-        }}
+      <motion.button
+        whileTap={{ scale: 0.95 }}
+        onClick={() => setIsFeedbackOpen(true)}
         className="group relative flex items-center gap-2 overflow-hidden rounded-full border border-zinc-700 bg-transparent px-6 py-2.5 text-xs font-bold uppercase tracking-widest text-zinc-300 transition-colors hover:border-red-500 hover:text-white"
       >
         <span className="relative z-10">GIVE Feedback &rarr;</span>
         <div className="absolute inset-0 z-0 bg-red-500/10 opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
-      </button>
+      </motion.button>
 
       {/* ── Dynamic Timestamp ── */}
       <p className="text-xs text-zinc-600 font-medium tracking-wide">
-        Portfolio last updated on {lastUpdated}
+        Portfolio last updated on {lastUpdated ? formatDateWithDay(lastUpdated.updatedAt) : "…"}
       </p>
-      
+
+      <FeedbackModal isOpen={isFeedbackOpen} onClose={() => setIsFeedbackOpen(false)} />
+
     </footer>
   );
 }
