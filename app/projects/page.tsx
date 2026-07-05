@@ -1,83 +1,51 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useMemo, useState } from "react";
+import useSWR from "swr";
+import Fuse from "fuse.js";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import { ArrowLeft, ExternalLink, Search, GitBranch, Code2, Check, X } from "lucide-react";
-import { useScrollStore } from "@/src/contexts/ScrollStore";
 
 /* ═══════════════════════════════════════════════════════════════
    SEARCHABLE PROJECTS VAULT (/projects)
    A dedicated 3-column architectural view with real-time fuzzy
-   search for all repository entries.
+   search (fuse.js) over the database-backed project catalog.
    ═══════════════════════════════════════════════════════════════ */
 
 interface Project {
-  id: string;
+  slug: string;
   title: string;
-  description: string;
+  shortInfo: string;
   githubUrl: string;
   tags: string[];
 }
 
-const MOCK_PROJECTS: Project[] = [
-  {
-    id: "neuroforge",
-    title: "NeuroForge Engine",
-    description: "Advanced AI Agent orchestration layer with dynamic sub-task delegation and complex state recovery.",
-    githubUrl: "https://github.com/srinivas/neuroforge",
-    tags: ["TypeScript", "Node.js", "AI"]
-  },
-  {
-    id: "portfoliov2",
-    title: "Portfolio V2 Shell",
-    description: "Cinematic, glassmorphic portfolio architecture utilizing heavy framer-motion physics and SQLite.",
-    githubUrl: "https://github.com/srinivas/portfolio-v2",
-    tags: ["Next.js", "Framer Motion", "Tailwind"]
-  },
-  {
-    id: "archagent",
-    title: "ArchAgent AI",
-    description: "LLM code generation system with deep integration for Claude 3.5 Sonnet and workspace analysis.",
-    githubUrl: "https://github.com/srinivas/archagent",
-    tags: ["Python", "React", "LLMs"]
-  },
-  {
-    id: "quantum-router",
-    title: "Quantum Router",
-    description: "High-performance edge routing system built on Rust for sub-millisecond API proxying.",
-    githubUrl: "https://github.com/srinivas/quantum-router",
-    tags: ["Rust", "Networking"]
-  },
-  {
-    id: "sentinel-auth",
-    title: "Sentinel Auth",
-    description: "Zero-trust authentication framework with hardware key integration and biometric fallback.",
-    githubUrl: "https://github.com/srinivas/sentinel-auth",
-    tags: ["Security", "Go", "WebAuthn"]
-  }
-];
+const fetcher = (url: string) => fetch(url).then((r) => r.json());
 
 export default function ProjectsPage() {
+  const { data } = useSWR<Project[]>("/api/projects", fetcher);
+  const { data: socials } = useSWR<{ GitHub?: string }>("/api/socials", fetcher);
+  const projects = useMemo(() => data ?? [], [data]);
   const [searchQuery, setSearchQuery] = useState("");
-  
+
+  const fuse = useMemo(
+    () => new Fuse(projects, { keys: ["title", "shortInfo", "tags"], threshold: 0.35 }),
+    [projects]
+  );
+
   const filteredProjects = useMemo(() => {
-    if (!searchQuery.trim()) return MOCK_PROJECTS;
-    const query = searchQuery.toLowerCase();
-    return MOCK_PROJECTS.filter(p => 
-      p.title.toLowerCase().includes(query) || 
-      p.description.toLowerCase().includes(query) ||
-      p.tags.some(t => t.toLowerCase().includes(query))
-    );
-  }, [searchQuery]);
+    if (!searchQuery.trim()) return projects;
+    return fuse.search(searchQuery).map((r) => r.item);
+  }, [searchQuery, fuse, projects]);
 
   return (
     <main className="min-h-screen w-full bg-[#050508] pb-32">
       {/* Background styling for consistency */}
       <div className="pointer-events-none fixed inset-0 z-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-red-900/20 via-[#050508] to-[#050508]" />
-      
+
       <div className="relative z-10 flex w-full flex-col items-center">
-        
+
         {/* ── HEADER ── */}
         <header className="sticky top-0 z-50 w-full border-b border-white/5 bg-black/60 backdrop-blur-2xl">
           <div className="mx-auto flex w-full max-w-7xl items-center justify-between px-6 py-4 md:px-12">
@@ -93,8 +61,8 @@ export default function ProjectsPage() {
               </Link>
               <h1 className="text-xl font-black uppercase tracking-widest text-white">Project Vault</h1>
             </div>
-            
-            <a href="https://github.com/srinivas" target="_blank" rel="noopener noreferrer">
+
+            <a href={socials?.GitHub || "https://github.com"} target="_blank" rel="noopener noreferrer">
               <motion.button
                 whileHover={{ scale: 1.05, backgroundColor: "rgba(255,255,255,0.1)" }}
                 whileTap={{ scale: 0.95 }}
@@ -112,7 +80,7 @@ export default function ProjectsPage() {
             <div className="absolute -inset-0.5 rounded-2xl bg-gradient-to-r from-red-500/30 to-red-900/30 opacity-0 blur transition duration-500 group-focus-within:opacity-100"></div>
             <div className="relative flex w-full items-center rounded-2xl border border-white/10 bg-zinc-900/80 px-6 py-4 backdrop-blur-md transition-colors focus-within:border-red-500/50">
               <Search className="text-zinc-500 transition-colors group-focus-within:text-red-500" size={24} />
-              <input 
+              <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
@@ -138,45 +106,55 @@ export default function ProjectsPage() {
         <div className="w-full max-w-7xl px-6 md:px-12 min-h-[50vh]">
           <AnimatePresence mode="popLayout">
             {filteredProjects.length > 0 ? (
-              <motion.div 
+              <motion.div
                 layout
                 className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3"
               >
                 {filteredProjects.map((project, index) => (
                   <motion.div
                     layout
-                    key={project.id}
+                    key={project.slug}
                     initial={{ opacity: 0, scale: 0.9 }}
                     animate={{ opacity: 1, scale: 1 }}
                     exit={{ opacity: 0, scale: 0.9 }}
                     transition={{ duration: 0.3, delay: index * 0.05 }}
-                    className="group relative flex flex-col justify-between overflow-hidden rounded-2xl border border-white/5 bg-white/[0.02] p-8 backdrop-blur-sm transition-all hover:-translate-y-1 hover:bg-white/[0.04] hover:border-red-500/30 hover:shadow-[0_15px_30px_-10px_rgba(220,38,38,0.15)]"
                   >
-                    <div className="flex flex-col gap-4">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center justify-center h-10 w-10 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400">
-                          <Code2 size={20} />
+                    <Link
+                      href={`/projects/${project.slug}`}
+                      className="group relative flex h-full flex-col justify-between overflow-hidden rounded-2xl border border-white/5 bg-white/[0.02] p-8 backdrop-blur-sm transition-all hover:-translate-y-1 hover:bg-white/[0.04] hover:border-red-500/30 hover:shadow-[0_15px_30px_-10px_rgba(220,38,38,0.15)]"
+                    >
+                      <div className="flex flex-col gap-4">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center justify-center h-10 w-10 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400">
+                            <Code2 size={20} />
+                          </div>
+                          <a
+                            href={project.githubUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            onClick={(e) => e.stopPropagation()}
+                            className="text-zinc-500 hover:text-white transition-colors"
+                          >
+                            <ExternalLink size={20} />
+                          </a>
                         </div>
-                        <a href={project.githubUrl} target="_blank" rel="noopener noreferrer" className="text-zinc-500 hover:text-white transition-colors">
-                          <ExternalLink size={20} />
-                        </a>
-                      </div>
-                      
-                      <h2 className="text-xl font-bold text-white tracking-wide mt-2">{project.title}</h2>
-                      
-                      {/* 1-2 line short description */}
-                      <p className="text-sm leading-relaxed text-zinc-400 line-clamp-2">
-                        {project.description}
-                      </p>
-                    </div>
 
-                    <div className="mt-8 flex flex-wrap gap-2">
-                      {project.tags.map((tag) => (
-                        <span key={tag} className="rounded-md bg-white/5 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-zinc-400">
-                          {tag}
-                        </span>
-                      ))}
-                    </div>
+                        <h2 className="text-xl font-bold text-white tracking-wide mt-2">{project.title}</h2>
+
+                        {/* 1-2 line short description */}
+                        <p className="text-sm leading-relaxed text-zinc-400 line-clamp-2">
+                          {project.shortInfo}
+                        </p>
+                      </div>
+
+                      <div className="mt-8 flex flex-wrap gap-2">
+                        {project.tags.map((tag) => (
+                          <span key={tag} className="rounded-md bg-white/5 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-zinc-400">
+                            {tag}
+                          </span>
+                        ))}
+                      </div>
+                    </Link>
                   </motion.div>
                 ))}
               </motion.div>

@@ -5,7 +5,7 @@ Rule: one phase per session. Verify in browser → commit → push → tick the 
 - [ ] **Phase 2 — Dead code purge:** duplicate CaseOpening, unreachable GameFeature/GamifiedOverlay, stray imports/dirs.
 - [ ] **Phase 3 — Spider-Man to spec:** trim script, entry drop (1.png), 7-image carousel, web line, hammock scroll reveal.
 - [ ] **Phase 4 — Interaction QA:** whileTap everywhere, modal behavior (X/outside/Escape), reduced-motion, zero `any`.
-- [ ] **Phase 5 — Projects, real:** Project model + API + seed 4 real projects, detail page (short vs long info), admin persistence.
+- [x] **Phase 5 — Projects, real:** Project model + API + seed 4 real projects, detail page (short vs long info), admin persistence.
 - [x] **Phase 6 — Documents & certs:** R2 presigned uploads, react-pdf viewer w/ ←→, certifications from DB + admin upload.
 - [ ] **🚀 DEPLOY CHECKPOINT:** Vercel live, URL on resume. Same day Phase 6 passes.
 - [x] **Phase 7 — Visitor auth:** guest (localStorage) vs registered (email/password, bcrypt 12, jose JWT). No OAuth in v1.

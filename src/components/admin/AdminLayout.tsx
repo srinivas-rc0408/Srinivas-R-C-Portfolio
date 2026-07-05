@@ -48,9 +48,16 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         });
       }
 
-      console.log("SYNCING PAYLOAD TO DB:", pendingChanges);
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-      
+      // Bulk-upsert staged project edits
+      const projectChanges = pendingChanges.filter(c => c.section === "Projects");
+      if (projectChanges.length > 0) {
+        await fetch("/api/projects", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(projectChanges.map(c => c.payload)),
+        });
+      }
+
       clearChanges();
     } catch (err) {
       console.error("Failed to sync changes:", err);
