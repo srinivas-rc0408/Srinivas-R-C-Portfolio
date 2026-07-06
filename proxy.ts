@@ -3,7 +3,7 @@ import type { NextRequest } from "next/server";
 import { jwtVerify } from "jose";
 
 /* ═══════════════════════════════════════════════════════════════
-   MIDDLEWARE — Route Protection
+   PROXY — Route Protection
    Protects /admin/dashboard/* routes.
    Redirects unauthenticated users to /admin (login).
    ═══════════════════════════════════════════════════════════════ */
@@ -16,7 +16,7 @@ function getSecret() {
   return new TextEncoder().encode(secret);
 }
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // Only protect dashboard routes

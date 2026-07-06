@@ -8,7 +8,6 @@ import {
   Menu,
   Search,
   Info,
-  CheckCircle2,
   AlertTriangle,
   FolderKanban,
   GraduationCap,
@@ -20,7 +19,6 @@ import {
   Users,
   Mail,
 } from "lucide-react";
-import Image from "next/image";
 
 interface FeedbackRow {
   isRead: boolean;

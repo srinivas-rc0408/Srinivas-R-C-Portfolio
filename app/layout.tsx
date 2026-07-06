@@ -13,10 +13,17 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+const description =
+  "Aspiring AI Engineer building highly optimized agentic systems and full-stack applications. Based in Bengaluru, Karnataka.";
+
 export const metadata: Metadata = {
-  title: "Srinivas R C | Portfolio",
-  description:
-    "Aspiring AI Engineer building highly optimized agentic systems and full-stack applications. Based in Bengaluru, Karnataka.",
+  title: "Srinivas R C — AI/ML Engineer & Full-Stack Developer",
+  description,
+  openGraph: {
+    title: "Srinivas R C — AI/ML Engineer & Full-Stack Developer",
+    description,
+    type: "website",
+  },
 };
 
 import { ScrollProvider } from "@/src/contexts/ScrollStore";

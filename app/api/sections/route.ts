@@ -1,5 +1,6 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
+import { isAdminRequest } from "@/lib/auth";
 
 /* ═══════════════════════════════════════════════════════════════
    API: /api/sections
@@ -23,9 +24,13 @@ export async function GET() {
   }
 }
 
-// POST: Sync the entire sections array (overwrites existing, adds new, deletes removed)
-export async function POST(request: Request) {
+// POST: Sync the entire sections array (overwrites existing, adds new, deletes removed) — admin only
+export async function POST(request: NextRequest) {
   try {
+    if (!(await isAdminRequest(request))) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     const { sections } = await request.json();
     if (!Array.isArray(sections)) {
       return NextResponse.json({ error: "Invalid data format. Expected array of sections." }, { status: 400 });

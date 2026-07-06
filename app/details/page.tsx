@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import DynamicSection from "@/src/components/DynamicSection";
 import Certifications from "@/src/components/sections/Certifications";
-import { Loader2, ArrowLeft, Menu, MapPin, Check } from "lucide-react";
+import { Loader2, ArrowLeft, MapPin, Check } from "lucide-react";
 import { useScrollStore } from "@/src/contexts/ScrollStore";
 import Link from "next/link";
 import { motion } from "framer-motion";

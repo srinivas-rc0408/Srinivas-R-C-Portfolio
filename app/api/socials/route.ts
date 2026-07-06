@@ -1,5 +1,6 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
+import { isAdminRequest } from "@/lib/auth";
 
 /* ═══════════════════════════════════════════════════════════════
    API: /api/socials
@@ -35,9 +36,13 @@ export async function GET() {
   }
 }
 
-// POST: Update the social links
-export async function POST(request: Request) {
+// POST: Update the social links (admin only)
+export async function POST(request: NextRequest) {
   try {
+    if (!(await isAdminRequest(request))) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     const { socials } = await request.json();
     if (!socials || typeof socials !== "object") {
       return NextResponse.json({ error: "Invalid data format. Expected an object." }, { status: 400 });

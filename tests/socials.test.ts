@@ -1,6 +1,8 @@
 import { test, beforeEach, after } from "node:test";
 import assert from "node:assert/strict";
+import { NextRequest } from "next/server";
 import { prisma } from "../lib/db.ts";
+import { createToken } from "../lib/auth.ts";
 import { GET, POST } from "../app/api/socials/route.ts";
 
 const DEFAULT_SOCIALS = {
@@ -20,6 +22,11 @@ after(async () => {
   await prisma.$disconnect();
 });
 
+async function adminCookieHeader() {
+  const token = await createToken("admin@test.dev");
+  return `srinivas_admin_session=${token}`;
+}
+
 test("GET seeds and returns defaults when missing", async () => {
   const res = await GET();
   assert.equal(res.status, 200);
@@ -29,9 +36,19 @@ test("GET seeds and returns defaults when missing", async () => {
   assert.ok(row);
 });
 
+test("POST rejects unauthenticated requests", async () => {
+  const res = await POST(new NextRequest("http://x/api/socials", { method: "POST", body: JSON.stringify({ socials: {} }) }));
+  assert.equal(res.status, 401);
+});
+
 test("POST upserts and GET returns merged overrides", async () => {
+  const cookie = await adminCookieHeader();
   const postRes = await POST(
-    new Request("http://x/api/socials", { method: "POST", body: JSON.stringify({ socials: { GitHub: "https://github.com/srinivasrc" } }) })
+    new NextRequest("http://x/api/socials", {
+      method: "POST",
+      headers: { cookie },
+      body: JSON.stringify({ socials: { GitHub: "https://github.com/srinivasrc" } }),
+    })
   );
   assert.equal(postRes.status, 200);
   assert.equal((await postRes.json()).success, true);
@@ -41,6 +58,9 @@ test("POST upserts and GET returns merged overrides", async () => {
 });
 
 test("POST rejects non-object payload", async () => {
-  const res = await POST(new Request("http://x/api/socials", { method: "POST", body: JSON.stringify({ socials: "nope" }) }));
+  const cookie = await adminCookieHeader();
+  const res = await POST(
+    new NextRequest("http://x/api/socials", { method: "POST", headers: { cookie }, body: JSON.stringify({ socials: "nope" }) })
+  );
   assert.equal(res.status, 400);
 });

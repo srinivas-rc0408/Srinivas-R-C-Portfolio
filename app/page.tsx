@@ -2,10 +2,9 @@
 
 import { useState, useEffect, useRef, useSyncExternalStore } from "react";
 import Image from "next/image";
-import { motion, AnimatePresence, useReducedMotion, useScroll, useTransform } from "framer-motion";
+import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import {
   Menu,
-  User,
   FileText,
   Info,
   Sparkles,
