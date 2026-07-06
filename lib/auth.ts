@@ -110,11 +110,18 @@ export function validateCredentials(
   const adminPassword = process.env.ADMIN_PASSWORD;
 
   if (!adminEmail || !adminPassword) {
-    console.error("ADMIN_EMAIL or ADMIN_PASSWORD not configured in .env.local");
+    console.error("ADMIN_EMAIL or ADMIN_PASSWORD not configured (set them in .env.local locally and in the Vercel dashboard for production)");
     return false;
   }
 
-  return email === adminEmail && password === adminPassword;
+  // Trim both sides so an invisible trailing space/newline — pasted into the
+  // Vercel env dashboard, or auto-inserted by a mobile keyboard — doesn't make
+  // an otherwise-correct credential fail an exact string compare. Email is also
+  // compared case-insensitively (email local/domain parts are not case-sensitive
+  // in practice); the password stays case-sensitive.
+  const emailMatch = email.trim().toLowerCase() === adminEmail.trim().toLowerCase();
+  const passwordMatch = password.trim() === adminPassword.trim();
+  return emailMatch && passwordMatch;
 }
 
 /** Check an API request's session cookie for an admin role. Used by admin-only routes. */

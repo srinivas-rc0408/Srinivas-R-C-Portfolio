@@ -2,7 +2,7 @@ import { test, beforeEach, after } from "node:test";
 import assert from "node:assert/strict";
 import bcrypt from "bcryptjs";
 import { prisma } from "../lib/db.ts";
-import { createUserToken, verifyToken } from "../lib/auth.ts";
+import { createUserToken, verifyToken, validateCredentials } from "../lib/auth.ts";
 import { checkLoginRateLimit } from "../lib/rateLimit.ts";
 import { registerUser } from "../app/api/auth/user/register/route.ts";
 import { loginUser } from "../app/api/auth/user/login/route.ts";
@@ -93,4 +93,35 @@ test("resolveMeStatus reports user for a valid visitor token", async () => {
 
 test("checkLoginRateLimit fails open when Upstash isn't configured", async () => {
   assert.equal(await checkLoginRateLimit("203.0.113.1"), true);
+});
+
+/* ── Admin credential validation (validateCredentials reads env at call time,
+   so these override ADMIN_EMAIL/ADMIN_PASSWORD and restore them after). ── */
+test("validateCredentials handles exact match, case/whitespace, and rejects wrong input", () => {
+  const origEmail = process.env.ADMIN_EMAIL;
+  const origPassword = process.env.ADMIN_PASSWORD;
+  try {
+    process.env.ADMIN_EMAIL = "admin@example.com";
+    process.env.ADMIN_PASSWORD = "s3cret-pass";
+
+    // exact match
+    assert.equal(validateCredentials("admin@example.com", "s3cret-pass"), true);
+    // email is case-insensitive
+    assert.equal(validateCredentials("Admin@Example.COM", "s3cret-pass"), true);
+    // invisible surrounding whitespace (e.g. pasted into Vercel, mobile keyboard) is tolerated
+    assert.equal(validateCredentials("  admin@example.com ", " s3cret-pass\n"), true);
+    // wrong password rejected
+    assert.equal(validateCredentials("admin@example.com", "wrong"), false);
+    // wrong email rejected
+    assert.equal(validateCredentials("someone@else.com", "s3cret-pass"), false);
+    // password stays case-sensitive
+    assert.equal(validateCredentials("admin@example.com", "S3CRET-PASS"), false);
+
+    // missing env → always false
+    delete process.env.ADMIN_EMAIL;
+    assert.equal(validateCredentials("admin@example.com", "s3cret-pass"), false);
+  } finally {
+    process.env.ADMIN_EMAIL = origEmail;
+    process.env.ADMIN_PASSWORD = origPassword;
+  }
 });
