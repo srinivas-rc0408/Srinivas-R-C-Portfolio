@@ -6,7 +6,9 @@ import { prisma } from "@/lib/db";
 /* ═══════════════════════════════════════════════════════════════
    GET /api/last-updated
    Max updatedAt across Document, Project, PortfolioData, Certificate.
-   Cheap (4 indexed LIMIT-1 queries in parallel) and cached for an hour.
+   Cheap: 4 indexed LIMIT-1 queries in parallel. force-dynamic so the
+   build never prerenders this route and never has to reach the database
+   at build time (a Neon cold-start was intermittently failing next build).
    ═══════════════════════════════════════════════════════════════ */
 
 
