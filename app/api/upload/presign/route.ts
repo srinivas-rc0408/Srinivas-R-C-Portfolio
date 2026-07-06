@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic';
+
 import { NextRequest, NextResponse } from "next/server";
 import { isAdminRequest } from "@/lib/auth";
 import { createPresignedUpload, isValidUploadKind, isAllowedContentType, MAX_UPLOAD_BYTES } from "@/lib/r2";

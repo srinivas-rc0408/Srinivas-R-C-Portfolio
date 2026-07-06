@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic';
+
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 
@@ -7,7 +9,6 @@ import { prisma } from "@/lib/db";
    Cheap (4 indexed LIMIT-1 queries in parallel) and cached for an hour.
    ═══════════════════════════════════════════════════════════════ */
 
-export const revalidate = 3600;
 
 export async function getLastUpdated(): Promise<Date> {
   const [doc, project, portfolioData, certificate] = await Promise.all([
