@@ -20,11 +20,15 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
   const { scrollY } = useScroll();
   const backgroundOpacity = useTransform(scrollY, [100, 500], [0, 1]);
 
-  // The Admin_OS is a completely separate application shell.
-  // We do not render the public Navbar, SideMenu, or Footer over it.
+  // The Admin_OS and the full-screen game are separate application shells.
+  // We do not render the public Navbar, SideMenu, or Footer over them —
+  // beyond visual clutter, the game's fixed z-100 overlay would otherwise
+  // be trapped inside this file's <main z-10> stacking context and end up
+  // painted BELOW the Navbar (z-80) and Footer (z-30), which live outside it.
   const isAdminRoute = pathname?.startsWith("/admin");
+  const isGameRoute = pathname === "/game";
 
-  if (isAdminRoute) {
+  if (isAdminRoute || isGameRoute) {
     return (
       <div className="min-h-screen w-full bg-[#050508] text-white overflow-x-hidden">
         {children}

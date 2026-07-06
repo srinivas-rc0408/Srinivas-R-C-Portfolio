@@ -1,161 +1,324 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Loader2, ArrowRight, Eye } from "lucide-react";
+import { Loader2, ArrowRight, Eye, X, Bike, Car, Bus, Gauge, Flag, Clock } from "lucide-react";
 import { useRouter } from "next/navigation";
 import Phaser from "phaser";
+import nipplejs from "nipplejs";
 
 /* ═══════════════════════════════════════════════════════════════
-   PORTFOLIO GAME (PHASER 3 + REACT BRIDGE)
-   A smooth 2D side-scrolling experience running on Canvas,
-   overlaid with DOM-based glassmorphic UI modals.
+   PORTFOLIO GAME (PHASER 4 + REACT BRIDGE)
+   Full-screen top-down driving game. Nine bus stops map to the nine
+   portfolio sections; reaching one pauses physics and dispatches a
+   DOM CustomEvent that React turns into a glass popup.
    ═══════════════════════════════════════════════════════════════ */
+
+type VehicleType = "motorcycle" | "car" | "bus";
+
+interface VehicleStats {
+  accel: number;
+  maxSpeed: number;
+  turnRate: number; // degrees/sec
+  friction: number;
+  size: [number, number];
+  color: number;
+  label: string;
+  turningLabel: string;
+}
+
+const VEHICLE_STATS: Record<VehicleType, VehicleStats> = {
+  motorcycle: { accel: 900, maxSpeed: 520, turnRate: 220, friction: 0.94, size: [26, 14], color: 0xf59e0b, label: "Motorcycle", turningLabel: "Very Tight" },
+  car: { accel: 650, maxSpeed: 420, turnRate: 160, friction: 0.92, size: [36, 20], color: 0xdc2626, label: "Car", turningLabel: "Balanced" },
+  bus: { accel: 400, maxSpeed: 300, turnRate: 90, friction: 0.9, size: [54, 28], color: 0x3b82f6, label: "Bus", turningLabel: "Wide" },
+};
+
+interface BusStopDef {
+  id: string;
+  name: string;
+  shortInfo: string;
+  route: string;
+  x: number;
+  y: number;
+}
+
+/* City block pitch 400px, buildings 260px centered in each block, leaving
+   ~140px road corridors. Stops sit on block-line intersections (always road). */
+const CELL = 400;
+const WORLD_SIZE = CELL * 8; // 3200
+const BUS_STOPS: BusStopDef[] = [
+  { id: "portfolio-details", name: "Portfolio Details", shortInfo: "The full story, one scroll.", route: "/details", x: 400, y: 400 },
+  { id: "projects", name: "Projects", shortInfo: "The project catalog.", route: "/projects", x: 1600, y: 400 },
+  { id: "resume", name: "Resume", shortInfo: "The one-page resume.", route: "/", x: 2800, y: 400 },
+  { id: "cv", name: "Curriculum Vitae", shortInfo: "The full CV.", route: "/", x: 400, y: 1600 },
+  { id: "education", name: "Education", shortInfo: "Degrees and coursework.", route: "/details#education", x: 1600, y: 1600 },
+  { id: "experience", name: "Experience", shortInfo: "Roles and responsibilities.", route: "/details#experience", x: 2800, y: 1600 },
+  { id: "achievements", name: "Achievements", shortInfo: "Wins worth mentioning.", route: "/details#achievements", x: 400, y: 2800 },
+  { id: "certifications", name: "Certifications", shortInfo: "Certs, chronologically.", route: "/details#certifications", x: 1600, y: 2800 },
+  { id: "connect", name: "Connect", shortInfo: "Ways to reach Srinivas.", route: "/", x: 2800, y: 2800 },
+];
+
+const MINIMAP_SIZE = 150;
+
+const TOUCH_QUERY = "(pointer: coarse)";
+function subscribeTouch(callback: () => void) {
+  const mq = window.matchMedia(TOUCH_QUERY);
+  mq.addEventListener("change", callback);
+  return () => mq.removeEventListener("change", callback);
+}
+function getTouchSnapshot() {
+  return window.matchMedia(TOUCH_QUERY).matches;
+}
+function getTouchServerSnapshot() {
+  return false;
+}
+
+interface UnlockDetail {
+  id: string;
+  name: string;
+  shortInfo: string;
+  route: string;
+}
+
+interface TripSummary {
+  distance: number;
+  stops: number;
+  duration: number;
+}
 
 export default function PortfolioGame() {
   const gameRef = useRef<HTMLDivElement>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [unlockedItem, setUnlockedItem] = useState<{ id: string; name: string } | null>(null);
+  const joystickZoneRef = useRef<HTMLDivElement>(null);
   const gameInstance = useRef<Phaser.Game | null>(null);
+  const joystickManagerRef = useRef<ReturnType<typeof nipplejs.create> | null>(null);
+  const joystickVectorRef = useRef({ x: 0, y: 0 });
+  const tripStatsRef = useRef({ distance: 0, visited: new Set<string>(), startTime: 0 });
+
+  const [vehicleType, setVehicleType] = useState<VehicleType | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [unlocked, setUnlocked] = useState<UnlockDetail | null>(null);
+  const [tripSummary, setTripSummary] = useState<TripSummary | null>(null);
+  const [submitting, setSubmitting] = useState(false);
   const router = useRouter();
+  const isTouch = useSyncExternalStore(subscribeTouch, getTouchSnapshot, getTouchServerSnapshot);
 
-  // ── INIT PHASER ──
+  /* ── Nipplejs joystick (touch only) ── */
   useEffect(() => {
-    if (typeof window === "undefined" || !gameRef.current) return;
+    const zone = joystickZoneRef.current;
+    if (!isTouch || !vehicleType || !zone) return;
 
-    // Define the Main Scene
+    const manager = nipplejs.create({
+      zone,
+      mode: "static",
+      position: { left: "80px", bottom: "80px" },
+      color: "#dc2626",
+      size: 100,
+    });
+    joystickManagerRef.current = manager;
+
+    manager.on("move", (evt) => {
+      const vector = evt.data.vector;
+      if (!vector) return;
+      joystickVectorRef.current = { x: vector.x, y: vector.y };
+    });
+    manager.on("end", () => {
+      joystickVectorRef.current = { x: 0, y: 0 };
+    });
+
+    return () => {
+      manager.destroy();
+      joystickManagerRef.current = null;
+    };
+  }, [isTouch, vehicleType]);
+
+  /* ── Phaser lifecycle ── */
+  useEffect(() => {
+    if (!vehicleType || typeof window === "undefined" || !gameRef.current) return;
+
+    const stats = VEHICLE_STATS[vehicleType];
+    tripStatsRef.current = { distance: 0, visited: new Set(), startTime: Date.now() };
+    const joystickVector = joystickVectorRef.current;
+
     class MainScene extends Phaser.Scene {
-      player!: Phaser.Types.Physics.Arcade.SpriteWithDynamicBody;
+      player!: Phaser.Physics.Arcade.Sprite;
+      buildings!: Phaser.Physics.Arcade.StaticGroup;
+      stopSprites = new Map<string, Phaser.Physics.Arcade.Sprite>();
       cursors!: Phaser.Types.Input.Keyboard.CursorKeys;
-      busStops!: Phaser.Physics.Arcade.StaticGroup;
+      wasd!: { up: Phaser.Input.Keyboard.Key; down: Phaser.Input.Keyboard.Key; left: Phaser.Input.Keyboard.Key; right: Phaser.Input.Keyboard.Key };
+      lastX = 60;
+      lastY = 60;
+      minimapCamera!: Phaser.Cameras.Scene2D.Camera;
 
       constructor() {
         super({ key: "MainScene" });
       }
 
       preload() {
-        // Generate placeholder textures to avoid external asset loading delays
-        const graphics = this.add.graphics();
-        
-        // Player texture (Red Cube)
-        graphics.fillStyle(0xdc2626, 1);
-        graphics.fillRect(0, 0, 40, 40);
-        graphics.generateTexture("player", 40, 40);
-        graphics.clear();
+        const g = this.add.graphics();
 
-        // Floor texture (Dark Zinc)
-        graphics.fillStyle(0x18181b, 1);
-        graphics.fillRect(0, 0, 800, 100);
-        graphics.generateTexture("floor", 800, 100);
-        graphics.clear();
+        // Vehicle texture: colored body + white "nose" triangle marking front (rotation 0 = facing +x)
+        const [w, h] = stats.size;
+        g.fillStyle(stats.color, 1);
+        g.fillRoundedRect(0, 0, w, h, 4);
+        g.fillStyle(0xffffff, 1);
+        g.fillTriangle(w, h / 2, w - 8, 2, w - 8, h - 2);
+        g.generateTexture("vehicle", w, h);
+        g.clear();
 
-        // Bus Stop/Milestone texture (Glowing Red/White)
-        graphics.fillStyle(0xffffff, 1);
-        graphics.fillRect(0, 0, 60, 120);
-        graphics.generateTexture("bus_stop", 60, 120);
-        graphics.clear();
+        // Building texture
+        g.fillStyle(0x18181b, 1);
+        g.fillRoundedRect(0, 0, 260, 260, 8);
+        g.lineStyle(2, 0x3f3f46, 1);
+        g.strokeRoundedRect(1, 1, 258, 258, 8);
+        g.generateTexture("building", 260, 260);
+        g.clear();
+
+        // Bus stop pad — unvisited (glowing red/white) and visited (dim emerald)
+        g.fillStyle(0xffffff, 1);
+        g.fillCircle(20, 20, 20);
+        g.fillStyle(0xdc2626, 1);
+        g.fillCircle(20, 20, 13);
+        g.generateTexture("stop_unvisited", 40, 40);
+        g.clear();
+
+        g.fillStyle(0x1f2937, 1);
+        g.fillCircle(20, 20, 20);
+        g.fillStyle(0x10b981, 1);
+        g.fillCircle(20, 20, 13);
+        g.generateTexture("stop_visited", 40, 40);
+        g.clear();
+
+        g.destroy();
       }
 
       create() {
-        // Notify React that the engine has initialized
         setIsLoading(false);
 
-        // Environment Background
-        this.cameras.main.setBackgroundColor("#050508");
+        this.physics.world.setBounds(0, 0, WORLD_SIZE, WORLD_SIZE);
+        this.cameras.main.setBackgroundColor("#111114");
+        this.cameras.main.setBounds(0, 0, WORLD_SIZE, WORLD_SIZE);
 
-        // --- PLATFORMS ---
-        const platforms = this.physics.add.staticGroup();
-        // Create a long floor
-        for (let i = 0; i < 10; i++) {
-          platforms.create(400 + i * 800, this.scale.height - 50, "floor").refreshBody();
+        // Road base
+        const roadGraphics = this.add.graphics();
+        roadGraphics.fillStyle(0x1a1a1e, 1);
+        roadGraphics.fillRect(0, 0, WORLD_SIZE, WORLD_SIZE);
+
+        // Buildings — one per city block, collidable
+        this.buildings = this.physics.add.staticGroup();
+        for (let row = 0; row < WORLD_SIZE / CELL; row++) {
+          for (let col = 0; col < WORLD_SIZE / CELL; col++) {
+            const cx = CELL / 2 + col * CELL;
+            const cy = CELL / 2 + row * CELL;
+            this.buildings.create(cx, cy, "building");
+          }
         }
 
-        // --- PLAYER ---
-        this.player = this.physics.add.sprite(100, this.scale.height - 200, "player");
-        this.player.setBounce(0.1);
-        this.player.setCollideWorldBounds(false); // Let them run forever
-
-        // --- CAMERA FOLLOW ---
-        this.cameras.main.startFollow(this.player, true, 0.08, 0.08);
-        this.cameras.main.setFollowOffset(-200, 0); // Keep player slightly left of center
-
-        // --- BUS STOPS (MILESTONES) ---
-        this.busStops = this.physics.add.staticGroup();
-        
-        const milestones = [
-          { x: 1200, id: "experience", name: "Experience Record" },
-          { x: 2400, id: "education", name: "Education History" },
-          { x: 3600, id: "neuroforge", name: "NeuroForge Engine Project" },
-        ];
-
-        milestones.forEach((m) => {
-          const stop = this.busStops.create(m.x, this.scale.height - 160, "bus_stop") as Phaser.Physics.Arcade.Sprite;
-          // Store data in the sprite
-          stop.setData("id", m.id);
-          stop.setData("name", m.name);
-          stop.setData("hit", false);
-          
-          // Add a glowing text label above it
-          this.add.text(m.x, this.scale.height - 250, m.name, {
-            fontFamily: "monospace",
-            fontSize: "16px",
-            color: "#dc2626",
-            fontStyle: "bold"
-          }).setOrigin(0.5);
+        // Bus stops — overlap only, never block movement
+        const stopsGroup = this.physics.add.staticGroup();
+        BUS_STOPS.forEach((stop) => {
+          const sprite = stopsGroup.create(stop.x, stop.y, "stop_unvisited") as Phaser.Physics.Arcade.Sprite;
+          sprite.setData("id", stop.id);
+          this.stopSprites.set(stop.id, sprite);
+          this.add
+            .text(stop.x, stop.y - 34, stop.name, { fontFamily: "monospace", fontSize: "13px", color: "#f4f4f5", fontStyle: "bold" })
+            .setOrigin(0.5);
         });
 
-        // --- COLLISIONS ---
-        this.physics.add.collider(this.player, platforms);
-        
-        this.physics.add.overlap(this.player, this.busStops, (player, stopObj) => {
-          const stop = stopObj as Phaser.Physics.Arcade.Sprite;
-          if (stop.getData("hit")) return; // Already triggered
+        // Player
+        this.player = this.physics.add.sprite(60, 60, "vehicle");
+        this.player.setDamping(false);
+        this.player.setDrag(0);
+        this.player.setMaxVelocity(stats.maxSpeed);
+        this.player.setCollideWorldBounds(true);
+        this.cameras.main.startFollow(this.player, true, 0.1, 0.1);
 
-          // Mark as hit
-          stop.setData("hit", true);
-          // Tint it to show it's deactivated
-          stop.setTint(0x3f3f46);
+        this.physics.add.collider(this.player, this.buildings);
+        this.physics.add.overlap(this.player, stopsGroup, (_playerObj, stopObj) => {
+          const sprite = stopObj as Phaser.Physics.Arcade.Sprite;
+          const id = sprite.getData("id") as string;
+          if (tripStatsRef.current.visited.has(id)) return;
 
-          // Pause Physics
+          tripStatsRef.current.visited.add(id);
+          sprite.setTexture("stop_visited");
+
+          const def = BUS_STOPS.find((s) => s.id === id)!;
           this.physics.pause();
-          
-          // Dispatch DOM Event to React
-          window.dispatchEvent(new CustomEvent("GAME_UNLOCK", {
-            detail: {
-              id: stop.getData("id"),
-              name: stop.getData("name")
-            }
-          }));
+          window.dispatchEvent(
+            new CustomEvent("GAME_UNLOCK", { detail: { id: def.id, name: def.name, shortInfo: def.shortInfo, route: def.route } })
+          );
         });
 
-        // --- INPUTS ---
+        // Minimap — player + stops only, no roads/buildings clutter
+        const minimapZoom = MINIMAP_SIZE / WORLD_SIZE;
+        this.minimapCamera = this.cameras.add(
+          this.scale.width - MINIMAP_SIZE - 16,
+          this.scale.height - MINIMAP_SIZE - 16,
+          MINIMAP_SIZE,
+          MINIMAP_SIZE
+        );
+        this.minimapCamera.setZoom(minimapZoom);
+        this.minimapCamera.setBounds(0, 0, WORLD_SIZE, WORLD_SIZE);
+        this.minimapCamera.centerOn(WORLD_SIZE / 2, WORLD_SIZE / 2);
+        this.minimapCamera.setBackgroundColor(0x000000);
+        this.minimapCamera.ignore(roadGraphics);
+        this.minimapCamera.ignore(this.buildings);
+
+        // Inputs
         if (this.input.keyboard) {
           this.cursors = this.input.keyboard.createCursorKeys();
+          this.wasd = {
+            up: this.input.keyboard.addKey("W"),
+            down: this.input.keyboard.addKey("S"),
+            left: this.input.keyboard.addKey("A"),
+            right: this.input.keyboard.addKey("D"),
+          };
         }
-
-        // Tap to jump (mobile support)
-        this.input.on('pointerdown', () => {
-          if (this.player.body?.touching.down && this.physics.world.isPaused === false) {
-            this.player.setVelocityY(-400);
-          }
-        });
       }
 
-      update() {
-        if (!this.player || !this.cursors) return;
+      update(_time: number, delta: number) {
+        if (!this.player || this.physics.world.isPaused) return;
+        const dt = delta / 1000;
+        const body = this.player.body as Phaser.Physics.Arcade.Body;
 
-        // Player Movement Logic
-        if (this.cursors.left.isDown) {
-          this.player.setVelocityX(-300);
-        } else if (this.cursors.right.isDown) {
-          this.player.setVelocityX(300);
+        let throttle = 0;
+        let steer = 0;
+
+        if (this.cursors?.up.isDown || this.wasd?.up.isDown) throttle = 1;
+        else if (this.cursors?.down.isDown || this.wasd?.down.isDown) throttle = -1;
+
+        if (this.cursors?.left.isDown || this.wasd?.left.isDown) steer = -1;
+        else if (this.cursors?.right.isDown || this.wasd?.right.isDown) steer = 1;
+
+        // Touch joystick overrides keyboard when active
+        const jv = joystickVector;
+        if (jv.x !== 0 || jv.y !== 0) {
+          throttle = jv.y;
+          steer = jv.x;
+        }
+
+        if (steer !== 0) {
+          this.player.rotation += Phaser.Math.DegToRad(stats.turnRate) * steer * dt;
+        }
+
+        if (throttle !== 0) {
+          const ax = Math.cos(this.player.rotation) * stats.accel * throttle;
+          const ay = Math.sin(this.player.rotation) * stats.accel * throttle;
+          body.velocity.x += ax * dt;
+          body.velocity.y += ay * dt;
         } else {
-          this.player.setVelocityX(0);
+          body.velocity.x *= stats.friction;
+          body.velocity.y *= stats.friction;
         }
 
-        if (this.cursors.up.isDown && this.player.body?.touching.down) {
-          this.player.setVelocityY(-400);
+        const speed = body.velocity.length();
+        if (speed > stats.maxSpeed) {
+          body.velocity.scale(stats.maxSpeed / speed);
         }
+
+        const moved = Phaser.Math.Distance.Between(this.lastX, this.lastY, this.player.x, this.player.y);
+        tripStatsRef.current.distance += moved;
+        this.lastX = this.player.x;
+        this.lastY = this.player.y;
       }
     }
 
@@ -166,10 +329,7 @@ export default function PortfolioGame() {
       height: window.innerHeight,
       physics: {
         default: "arcade",
-        arcade: {
-          gravity: { x: 0, y: 800 },
-          debug: false,
-        },
+        arcade: { gravity: { x: 0, y: 0 }, debug: false },
       },
       scene: [MainScene],
       backgroundColor: "#050508",
@@ -179,17 +339,11 @@ export default function PortfolioGame() {
       },
     };
 
-    // Initialize Game
     gameInstance.current = new Phaser.Game(config);
 
-    // --- EVENT LISTENER FOR REACT BRIDGE ---
-    const handleUnlock = (e: Event) => {
-      const customEvent = e as CustomEvent;
-      setUnlockedItem(customEvent.detail);
-    };
+    const handleUnlock = (e: Event) => setUnlocked((e as CustomEvent).detail);
     window.addEventListener("GAME_UNLOCK", handleUnlock);
 
-    // --- CLEANUP (Memory Management) ---
     return () => {
       window.removeEventListener("GAME_UNLOCK", handleUnlock);
       if (gameInstance.current) {
@@ -197,56 +351,137 @@ export default function PortfolioGame() {
         gameInstance.current = null;
       }
     };
-  }, []);
+  }, [vehicleType]);
+
+  const resumePhysics = () => {
+    const scene = gameInstance.current?.scene.getScene("MainScene");
+    scene?.physics.resume();
+  };
 
   const handleContinue = () => {
-    setUnlockedItem(null);
-    if (gameInstance.current) {
-      // Resume the active scene's physics
-      const scene = gameInstance.current.scene.getScene("MainScene");
-      if (scene) {
-        scene.physics.resume();
-      }
-    }
+    setUnlocked(null);
+    resumePhysics();
   };
 
   const handleViewDetails = () => {
-    if (unlockedItem) {
-      router.push(`/details#${unlockedItem.id}`);
+    if (unlocked) router.push(unlocked.route);
+  };
+
+  const requestExit = () => {
+    const { distance, visited, startTime } = tripStatsRef.current;
+    gameInstance.current?.scene.getScene("MainScene")?.physics.pause();
+    setTripSummary({
+      distance: Math.round(distance / 10),
+      stops: visited.size,
+      duration: Math.round((Date.now() - startTime) / 1000),
+    });
+  };
+
+  const keepDriving = () => {
+    setTripSummary(null);
+    resumePhysics();
+  };
+
+  const confirmExit = async () => {
+    if (!tripSummary || !vehicleType) return;
+    setSubmitting(true);
+    try {
+      await fetch("/api/game/session", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          vehicleType,
+          distanceTraveled: tripStatsRef.current.distance,
+          stopsVisited: Array.from(tripStatsRef.current.visited),
+          durationSeconds: tripSummary.duration,
+        }),
+      });
+    } finally {
+      router.push("/");
     }
   };
 
+  /* ── Vehicle selector (Phaser hasn't mounted yet) ── */
+  if (!vehicleType) {
+    return (
+      <div className="flex h-screen w-screen flex-col items-center justify-center gap-10 bg-[#050508] px-6 text-center">
+        <div>
+          <h1 className="text-2xl font-black uppercase tracking-widest text-white">Choose Your Ride</h1>
+          <p className="mt-2 text-sm text-zinc-500">Each vehicle handles differently.</p>
+        </div>
+        <div className="grid w-full max-w-3xl grid-cols-1 gap-6 sm:grid-cols-3">
+          {(Object.entries(VEHICLE_STATS) as [VehicleType, VehicleStats][]).map(([type, stats]) => {
+            const Icon = type === "motorcycle" ? Bike : type === "car" ? Car : Bus;
+            return (
+              <motion.button
+                key={type}
+                whileHover={{ scale: 1.03, y: -4 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => setVehicleType(type)}
+                className="flex flex-col items-center gap-4 rounded-2xl border border-white/10 bg-white/5 p-8 backdrop-blur-xl transition-colors hover:border-red-500/50"
+              >
+                <div
+                  className="flex h-16 w-16 items-center justify-center rounded-full border"
+                  style={{ borderColor: `#${stats.color.toString(16)}66`, color: `#${stats.color.toString(16)}` }}
+                >
+                  <Icon size={28} />
+                </div>
+                <h3 className="text-lg font-bold text-white">{stats.label}</h3>
+                <div className="flex flex-col gap-1 text-[10px] font-bold uppercase tracking-widest text-zinc-500">
+                  <span>Top speed {stats.maxSpeed}</span>
+                  <span>Turning {stats.turningLabel}</span>
+                </div>
+              </motion.button>
+            );
+          })}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="relative h-screen w-screen overflow-hidden bg-black font-sans">
-      
-      {/* ── SKELETON LOADER ── */}
       {isLoading && (
         <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-[#050508]">
-          <Loader2 className="animate-spin text-red-500 mb-4" size={48} />
+          <Loader2 className="mb-4 animate-spin text-red-500" size={48} />
           <h2 className="text-sm font-bold uppercase tracking-widest text-zinc-500">Loading Engine...</h2>
         </div>
       )}
 
-      {/* ── PHASER CANVAS MOUNT ── */}
       <div ref={gameRef} className="absolute inset-0 z-0" />
 
-      {/* ── ON-SCREEN INSTRUCTIONS (Disappears on interaction) ── */}
-      {!isLoading && !unlockedItem && (
-        <motion.div 
-          initial={{ opacity: 0 }} 
-          animate={{ opacity: 1 }} 
+      {/* ── Exit ── */}
+      <motion.button
+        whileHover={{ scale: 1.1, rotate: 90 }}
+        whileTap={{ scale: 0.9 }}
+        onClick={requestExit}
+        className="absolute right-8 top-8 z-[110] flex h-12 w-12 items-center justify-center rounded-full bg-red-600 text-white shadow-[0_0_20px_rgba(220,38,38,0.4)] transition-colors hover:bg-red-500"
+      >
+        <X size={24} strokeWidth={3} />
+      </motion.button>
+
+      {/* ── Instructions ── */}
+      {!isLoading && !unlocked && !tripSummary && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
           transition={{ delay: 1 }}
-          className="pointer-events-none absolute bottom-12 left-1/2 -translate-x-1/2 z-10 text-center"
+          className="pointer-events-none absolute bottom-8 left-1/2 z-10 -translate-x-1/2 text-center"
         >
           <p className="text-xs font-bold uppercase tracking-[0.3em] text-white/40">
-            Use Arrow Keys or Tap to Move & Jump
+            {isTouch ? "Use the joystick to drive" : "WASD or Arrow Keys to drive"}
           </p>
         </motion.div>
       )}
 
-      {/* ── THE REACT MODAL OVERLAY (Glassmorphic) ── */}
+      {/* ── Touch joystick zone ── */}
+      {isTouch && !unlocked && !tripSummary && (
+        <div ref={joystickZoneRef} className="absolute bottom-0 left-0 z-20 h-48 w-48" />
+      )}
+
+      {/* ── Unlock popup ── */}
       <AnimatePresence>
-        {unlockedItem && (
+        {unlocked && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -257,39 +492,93 @@ export default function PortfolioGame() {
               initial={{ scale: 0.9, y: 20 }}
               animate={{ scale: 1, y: 0 }}
               exit={{ scale: 0.9, y: 20 }}
-              className="flex w-full max-w-sm flex-col items-center rounded-2xl border border-red-500/50 bg-zinc-900/80 p-8 shadow-[0_0_50px_-10px_rgba(220,38,38,0.3)] backdrop-blur-xl text-center"
+              className="flex w-full max-w-sm flex-col items-center rounded-2xl border border-red-500/50 bg-zinc-900/80 p-8 text-center shadow-[0_0_50px_-10px_rgba(220,38,38,0.3)] backdrop-blur-xl"
             >
-              <div className="mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-red-500/10 border border-red-500/20 text-red-400 shadow-[0_0_20px_rgba(220,38,38,0.2)]">
-                <span className="text-2xl">🎉</span>
+              <div className="mb-6 flex h-16 w-16 items-center justify-center rounded-full border border-red-500/20 bg-red-500/10 text-red-400 shadow-[0_0_20px_rgba(220,38,38,0.2)]">
+                <Flag size={26} />
               </div>
-              
-              <h2 className="text-xl font-black uppercase tracking-widest text-white mb-2">
-                Checkpoint Reached
-              </h2>
-              <p className="text-sm text-zinc-400 mb-8 leading-relaxed">
-                You just unlocked the <br/>
-                <strong className="text-red-400">{unlockedItem.name}</strong>!
-              </p>
+              <h2 className="mb-2 text-xl font-black uppercase tracking-widest text-white">Congrats! You Unlocked</h2>
+              <p className="mb-1 text-lg font-bold text-red-400">{unlocked.name}</p>
+              <p className="mb-8 text-sm leading-relaxed text-zinc-400">{unlocked.shortInfo}</p>
 
               <div className="flex w-full flex-col gap-3">
-                <button
+                <motion.button
+                  whileTap={{ scale: 0.95 }}
                   onClick={handleViewDetails}
                   className="flex w-full items-center justify-center gap-2 rounded-xl bg-white px-4 py-3.5 text-xs font-bold uppercase tracking-widest text-black transition-colors hover:bg-zinc-200"
                 >
                   <Eye size={16} /> Click to View
-                </button>
-                <button
+                </motion.button>
+                <motion.button
+                  whileTap={{ scale: 0.95 }}
                   onClick={handleContinue}
                   className="flex w-full items-center justify-center gap-2 rounded-xl border border-white/10 bg-transparent px-4 py-3.5 text-xs font-bold uppercase tracking-widest text-zinc-400 transition-colors hover:bg-white/5 hover:text-white"
                 >
-                  Keep Exploring <ArrowRight size={16} />
-                </button>
+                  Continue <ArrowRight size={16} />
+                </motion.button>
               </div>
             </motion.div>
           </motion.div>
         )}
       </AnimatePresence>
 
+      {/* ── Trip summary ── */}
+      <AnimatePresence>
+        {tripSummary && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="absolute inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-md"
+          >
+            <motion.div
+              initial={{ scale: 0.9, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.9, y: 20 }}
+              className="flex w-full max-w-sm flex-col items-center rounded-2xl border border-white/10 bg-zinc-900/80 p-8 text-center shadow-[0_0_50px_-10px_rgba(0,0,0,0.5)] backdrop-blur-xl"
+            >
+              <h2 className="mb-6 text-xl font-black uppercase tracking-widest text-white">Trip Summary</h2>
+
+              <div className="mb-8 grid w-full grid-cols-3 gap-3">
+                <div className="flex flex-col items-center gap-1 rounded-xl border border-white/10 bg-white/5 p-4">
+                  <Gauge size={18} className="text-red-400" />
+                  <span className="text-lg font-bold text-white">{tripSummary.distance}</span>
+                  <span className="text-[9px] uppercase tracking-widest text-zinc-500">Distance</span>
+                </div>
+                <div className="flex flex-col items-center gap-1 rounded-xl border border-white/10 bg-white/5 p-4">
+                  <Flag size={18} className="text-red-400" />
+                  <span className="text-lg font-bold text-white">{tripSummary.stops}/9</span>
+                  <span className="text-[9px] uppercase tracking-widest text-zinc-500">Stops</span>
+                </div>
+                <div className="flex flex-col items-center gap-1 rounded-xl border border-white/10 bg-white/5 p-4">
+                  <Clock size={18} className="text-red-400" />
+                  <span className="text-lg font-bold text-white">{tripSummary.duration}s</span>
+                  <span className="text-[9px] uppercase tracking-widest text-zinc-500">Time</span>
+                </div>
+              </div>
+
+              <div className="flex w-full flex-col gap-3">
+                <motion.button
+                  whileTap={{ scale: 0.95 }}
+                  disabled={submitting}
+                  onClick={confirmExit}
+                  className="flex w-full items-center justify-center gap-2 rounded-xl bg-red-600 px-4 py-3.5 text-xs font-bold uppercase tracking-widest text-white transition-colors hover:bg-red-500 disabled:opacity-50"
+                >
+                  {submitting ? <Loader2 size={16} className="animate-spin" /> : "Return Home"}
+                </motion.button>
+                <motion.button
+                  whileTap={{ scale: 0.95 }}
+                  disabled={submitting}
+                  onClick={keepDriving}
+                  className="flex w-full items-center justify-center gap-2 rounded-xl border border-white/10 bg-transparent px-4 py-3.5 text-xs font-bold uppercase tracking-widest text-zinc-400 transition-colors hover:bg-white/5 hover:text-white disabled:opacity-50"
+                >
+                  Keep Driving
+                </motion.button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
