@@ -11,20 +11,21 @@ test("POST logs the request to SystemLog before attempting delivery", async () =
   // ponytail: asserts the Prisma write, not the Resend HTTP outcome — the
   // route logs unconditionally before calling Resend, so this holds even
   // when RESEND_API_KEY is misconfigured in the environment.
-  const before = await prisma.systemLog.count();
+  // Scoped by a unique marker (not a global count/"latest" read) so this
+  // doesn't race other test files writing to the same shared SystemLog table.
+  const marker = `Resume-${Date.now()}`;
 
   await POST(
     new Request("http://x/api/share", {
       method: "POST",
-      body: JSON.stringify({ recipientEmail: "delivered@resend.dev", documentType: "Resume" }),
+      body: JSON.stringify({ recipientEmail: "delivered@resend.dev", documentType: marker }),
     })
   );
 
-  const after_ = await prisma.systemLog.count();
-  assert.equal(after_, before + 1);
+  const row = await prisma.systemLog.findFirst({ where: { action: { contains: marker } } });
+  assert.ok(row);
 
-  const latest = await prisma.systemLog.findFirst({ orderBy: { createdAt: "desc" } });
-  assert.match(latest!.action, /Resume/);
+  await prisma.systemLog.deleteMany({ where: { id: row!.id } });
 });
 
 test("POST rejects missing fields", async () => {

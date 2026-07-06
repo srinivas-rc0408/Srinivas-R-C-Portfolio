@@ -77,6 +77,16 @@ body {
   }
 }
 
+/* Idle shine sweep — the chest entry card, mostly still, one quick pass every 7s */
+@keyframes chestShine {
+  0%, 85% {
+    background-position: 200% center;
+  }
+  100% {
+    background-position: -200% center;
+  }
+}
+
 /* ═══════════════════════════════════════════════════════════════
    SPIDER-MAN STAGE — see SPIDERMAN-ASSETS-SPEC.md §4
    ═══════════════════════════════════════════════════════════════ */

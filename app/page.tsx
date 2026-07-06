@@ -39,6 +39,7 @@ function getIsMobileServerSnapshot() {
 export default function Home() {
   const [gameOpen, setGameOpen] = useState(false);
   const [resumeOpen, setResumeOpen] = useState(false);
+  const [cvOpen, setCvOpen] = useState(false);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const reduceMotion = useReducedMotion();
   const { openMenu } = useScrollStore();
@@ -108,8 +109,13 @@ export default function Home() {
   return (
     <>
       {/* ── Game Feature Modal (non-blocking) ── */}
-      <CaseOpening isOpen={gameOpen} onClose={() => setGameOpen(false)} />
+      <CaseOpening
+        isOpen={gameOpen}
+        onClose={() => setGameOpen(false)}
+        onOpenDocument={(type) => (type === "resume" ? setResumeOpen(true) : setCvOpen(true))}
+      />
       <DocumentModal isOpen={resumeOpen} onClose={() => setResumeOpen(false)} type="resume" />
+      <DocumentModal isOpen={cvOpen} onClose={() => setCvOpen(false)} type="cv" />
 
       {/* ── Global scrollbar styles ── */}
       <style jsx global>{`
@@ -371,8 +377,17 @@ export default function Home() {
               whileHover={{ scale: 1.05, y: -10 }}
               whileTap={{ scale: 0.95 }}
               onClick={() => setGameOpen(true)}
-              className="flex flex-col items-center justify-center gap-4 cursor-pointer rounded-2xl bg-zinc-950/40 backdrop-blur-3xl border border-white/5 hover:border-red-500/50 hover:bg-zinc-900/60 p-10 transition-all duration-500 text-center"
+              className="relative flex flex-col items-center justify-center gap-4 cursor-pointer overflow-hidden rounded-2xl bg-zinc-950/40 backdrop-blur-3xl border border-white/5 hover:border-red-500/50 hover:bg-zinc-900/60 p-10 transition-all duration-500 text-center"
             >
+              {/* Idle shine sweep — hints the card is interactive */}
+              <div
+                className="pointer-events-none absolute inset-0"
+                style={{
+                  background: "linear-gradient(105deg, transparent 40%, rgba(255,255,255,0.06) 50%, transparent 60%)",
+                  backgroundSize: "200% 100%",
+                  animation: "chestShine 7s ease-in-out infinite",
+                }}
+              />
               <div className="h-16 w-16 flex items-center justify-center rounded-full bg-red-500/10 border border-red-500/20 text-red-500">
                 <Package size={32} strokeWidth={1.5} />
               </div>
