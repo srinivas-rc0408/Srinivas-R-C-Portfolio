@@ -7,6 +7,7 @@ import Link from "next/link";
 import { X, Folder, ChevronDown, Terminal, GraduationCap, Briefcase, Award, FileText, Check } from "lucide-react";
 import { useScrollStore } from "@/src/contexts/ScrollStore";
 import { useVisited } from "@/src/hooks/useVisited";
+import { useEscape } from "@/src/hooks/useEscape";
 import DocumentModal from "@/src/components/modals/DocumentModal";
 
 /* ═══════════════════════════════════════════════════════════════
@@ -25,7 +26,7 @@ interface ProjectSummary {
   title: string;
 }
 
-const fetcher = (url: string) => fetch(url).then((r) => r.json());
+import { fetcher } from "@/lib/fetcher";
 
 const menuVariants: Variants = {
   hidden: { x: "-100%", transition: { ease: [0.22, 1, 0.36, 1], duration: 0.5 } },
@@ -43,6 +44,7 @@ export default function SideMenu({ isOpen, onClose }: SideMenuProps) {
   const [docType, setDocType] = useState<"resume" | "cv" | null>(null);
   const { data: projects } = useSWR<ProjectSummary[]>("/api/projects", fetcher);
   const { visited, markVisited } = useVisited();
+  useEscape(isOpen, onClose);
 
   const openDocument = (type: "resume" | "cv") => {
     setDocType(type);

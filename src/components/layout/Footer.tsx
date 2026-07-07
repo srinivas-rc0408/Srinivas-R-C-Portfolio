@@ -14,11 +14,11 @@ import { formatDateWithDay } from "@/lib/formatDate";
    feedback button, and real-time social links fetched from the DB.
    ═══════════════════════════════════════════════════════════════ */
 
-const fetcher = (url: string) => fetch(url).then((res) => res.json());
+import { fetcher } from "@/lib/fetcher";
 
 export default function Footer() {
   const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
-  const { data: socials, isLoading } = useSWR("/api/socials", fetcher, {
+  const { data: socials, isLoading } = useSWR<Record<string, string>>("/api/socials", fetcher, {
     fallbackData: {
       Instagram: "https://instagram.com",
       Email: "mailto:hello@example.com",

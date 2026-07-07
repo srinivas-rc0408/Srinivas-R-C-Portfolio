@@ -25,7 +25,7 @@ interface Project {
   isVisible: boolean;
 }
 
-const fetcher = (url: string) => fetch(url).then((r) => r.json());
+import { fetcher } from "@/lib/fetcher";
 
 export default function ProjectsWorkspace() {
   const { addChange } = useAdminStore();

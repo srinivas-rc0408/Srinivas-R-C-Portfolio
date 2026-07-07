@@ -42,7 +42,7 @@ function subscribeMobile(cb: () => void) {
 const getMobile = () => window.matchMedia(MOBILE_QUERY).matches;
 const getMobileServer = () => false;
 
-const fetcher = (url: string) => fetch(url).then((r) => (r.ok ? r.json() : []));
+import { fetcher } from "@/lib/fetcher";
 
 /* dev-only rarity distribution tally — verifies weighted pick roughly
    tracks configured weights; stripped from behavior in production. */

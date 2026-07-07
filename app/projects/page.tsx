@@ -21,7 +21,7 @@ interface Project {
   tags: string[];
 }
 
-const fetcher = (url: string) => fetch(url).then((r) => r.json());
+import { fetcher } from "@/lib/fetcher";
 
 export default function ProjectsPage() {
   const { data } = useSWR<Project[]>("/api/projects", fetcher);

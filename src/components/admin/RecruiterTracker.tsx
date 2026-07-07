@@ -20,7 +20,7 @@ interface DownloadLogRow {
   user: { name: string; email: string } | null;
 }
 
-const fetcher = (url: string) => fetch(url).then((r) => r.json());
+import { fetcher } from "@/lib/fetcher";
 
 export default function RecruiterTracker() {
   const { data } = useSWR<DownloadLogRow[]>("/api/downloads", fetcher);

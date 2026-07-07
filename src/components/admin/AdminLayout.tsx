@@ -24,7 +24,7 @@ interface FeedbackRow {
   isRead: boolean;
 }
 
-const fetcher = (url: string) => fetch(url).then((r) => r.json());
+import { fetcher } from "@/lib/fetcher";
 
 /* ═══════════════════════════════════════════════════════════════
    ADMIN LAYOUT SHELL

@@ -3,7 +3,32 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Lock, Mail, User, Phone, Loader2, LogOut } from "lucide-react";
+import Link from "next/link";
 import { useAuth } from "@/src/hooks/useAuth";
+import { useEscape } from "@/src/hooks/useEscape";
+
+/** Surface the API's real error. Non-JSON body (platform crash page) → status-based
+    message instead of a generic catch-all; thrown fetch = network failure. */
+async function postJson(url: string, body: unknown): Promise<{ ok: boolean; error?: string }> {
+  let res: Response;
+  try {
+    res = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+  } catch {
+    return { ok: false, error: "Network error — check your connection and try again." };
+  }
+  if (res.ok) return { ok: true };
+  let error: string | undefined;
+  try {
+    error = (await res.json()).error;
+  } catch {
+    /* non-JSON body — fall through to status-based message */
+  }
+  return { ok: false, error: error || `Server error (${res.status}) — please try again in a moment.` };
+}
 
 /* ═══════════════════════════════════════════════════════════════
    SIGN IN MODAL — visitor auth
@@ -25,6 +50,7 @@ type Tab = "guest" | "signin" | "register";
 export default function SignInModal({ isOpen, onClose, initialTab = "guest", message, onAuthenticated }: SignInModalProps) {
   const { isRegistered, displayName, email, refresh, setGuestName } = useAuth();
   const [tab, setTab] = useState<Tab>(initialTab);
+  useEscape(isOpen, onClose);
 
   // Reset to initialTab each time the modal opens (React's "adjust state during render" pattern —
   // avoids an effect for what's really a derived reaction to the isOpen transition).
@@ -95,6 +121,14 @@ export default function SignInModal({ isOpen, onClose, initialTab = "guest", mes
                 {tab === "register" && (
                   <RegisterTab onSuccess={() => { refresh(); onClose(); onAuthenticated?.(); }} />
                 )}
+
+                {/* This modal is for visitors — the owner signs in at /admin. */}
+                <p className="mt-6 border-t border-white/5 pt-4 text-center text-[10px] text-zinc-600">
+                  This sign-in is for visitors.{" "}
+                  <Link href="/admin" onClick={onClose} className="font-semibold text-zinc-400 underline-offset-2 transition-colors hover:text-white hover:underline">
+                    Admin?
+                  </Link>
+                </p>
               </>
             )}
           </motion.div>
@@ -179,23 +213,13 @@ function SignInTab({ onSuccess }: { onSuccess: () => void }) {
     e.preventDefault();
     setLoading(true);
     setError("");
-    try {
-      const res = await fetch("/api/auth/user/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        setError(data.error || "Failed to sign in.");
-        return;
-      }
-      onSuccess();
-    } catch {
-      setError("An unexpected error occurred.");
-    } finally {
-      setLoading(false);
+    const result = await postJson("/api/auth/user/login", { email, password });
+    setLoading(false);
+    if (!result.ok) {
+      setError(result.error!);
+      return;
     }
+    onSuccess();
   };
 
   return (
@@ -221,23 +245,13 @@ function RegisterTab({ onSuccess }: { onSuccess: () => void }) {
     e.preventDefault();
     setLoading(true);
     setError("");
-    try {
-      const res = await fetch("/api/auth/user/register", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, email, phone: phone || undefined, password }),
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        setError(data.error || "Failed to register.");
-        return;
-      }
-      onSuccess();
-    } catch {
-      setError("An unexpected error occurred.");
-    } finally {
-      setLoading(false);
+    const result = await postJson("/api/auth/user/register", { name, email, phone: phone || undefined, password });
+    setLoading(false);
+    if (!result.ok) {
+      setError(result.error!);
+      return;
     }
+    onSuccess();
   };
 
   return (

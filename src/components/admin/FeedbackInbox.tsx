@@ -18,7 +18,7 @@ interface FeedbackRow {
   createdAt: string;
 }
 
-const fetcher = (url: string) => fetch(url).then((r) => r.json());
+import { fetcher } from "@/lib/fetcher";
 
 export default function FeedbackInbox() {
   const { data, mutate } = useSWR<FeedbackRow[]>("/api/feedback", fetcher);

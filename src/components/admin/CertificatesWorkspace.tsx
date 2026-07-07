@@ -19,7 +19,7 @@ interface Certificate {
   isPublic: boolean;
 }
 
-const fetcher = (url: string) => fetch(url).then((r) => r.json());
+import { fetcher } from "@/lib/fetcher";
 
 export default function CertificatesWorkspace() {
   const { data, mutate } = useSWR<Certificate[]>("/api/certificates", fetcher);

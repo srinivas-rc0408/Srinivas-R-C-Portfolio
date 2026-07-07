@@ -18,7 +18,7 @@ interface MeResponse {
   email?: string;
 }
 
-const fetcher = (url: string) => fetch(url).then((r) => r.json());
+import { fetcher } from "@/lib/fetcher";
 
 export function useAuth() {
   const { data, isLoading, mutate } = useSWR<MeResponse>("/api/auth/user/me", fetcher);

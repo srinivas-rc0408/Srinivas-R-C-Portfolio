@@ -18,7 +18,7 @@ interface Certificate {
   completedYear: number;
 }
 
-const fetcher = (url: string) => fetch(url).then((r) => r.json());
+import { fetcher } from "@/lib/fetcher";
 
 export default function Certifications() {
   const { data } = useSWR<Certificate[]>("/api/certificates", fetcher);

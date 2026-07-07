@@ -39,6 +39,7 @@ export default function Home() {
   const [gameOpen, setGameOpen] = useState(false);
   const [resumeOpen, setResumeOpen] = useState(false);
   const [cvOpen, setCvOpen] = useState(false);
+  const [aiTeased, setAiTeased] = useState(false);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const reduceMotion = useReducedMotion();
   const { openMenu } = useScrollStore();
@@ -220,25 +221,28 @@ export default function Home() {
                   <FileText size={16} strokeWidth={1.5} />
                   View Resume
                 </motion.button>
-                <motion.button
-                  id="btn-details"
-                  whileHover={{
-                    scale: 1.03,
-                    borderColor: "rgba(255,255,255,0.6)",
-                    backgroundColor: "rgba(255,255,255,0.1)",
-                  }}
-                  whileTap={{ scale: 0.97 }}
-                  className="flex cursor-pointer items-center gap-2.5 border border-white/20 bg-transparent px-10 py-4 text-sm font-medium text-white/80 transition-all duration-300 hover:text-white"
-                >
-                  <Info size={16} strokeWidth={1.5} />
-                  View Details
-                </motion.button>
+                <Link href="/details">
+                  <motion.button
+                    id="btn-details"
+                    whileHover={{
+                      scale: 1.03,
+                      borderColor: "rgba(255,255,255,0.6)",
+                      backgroundColor: "rgba(255,255,255,0.1)",
+                    }}
+                    whileTap={{ scale: 0.97 }}
+                    className="flex cursor-pointer items-center gap-2.5 border border-white/20 bg-transparent px-10 py-4 text-sm font-medium text-white/80 transition-all duration-300 hover:text-white"
+                  >
+                    <Info size={16} strokeWidth={1.5} />
+                    View Details
+                  </motion.button>
+                </Link>
               </motion.div>
 
               {/* AI Assistant Button — Full-width rectangle */}
               <motion.div variants={itemVariants} className="max-w-md">
                 <motion.button
                   id="btn-ai"
+                  onClick={() => setAiTeased(true)}
                   whileHover={{ scale: 1.02, boxShadow: "0 0 25px rgba(220,38,38,0.5)" }}
                   whileTap={{ scale: 0.98 }}
                   className="glow-pulse relative flex w-full cursor-pointer flex-col items-start gap-1 overflow-hidden border border-red-500/30 px-8 py-5 transition-all duration-300"
@@ -263,7 +267,7 @@ export default function Home() {
                     ASK AI ABT ME
                   </span>
                   <span className="relative z-10 text-xs font-medium text-white/50">
-                    Srinivas&apos; personalized AI assistant
+                    {aiTeased ? "Coming soon — training in progress" : "Srinivas' personalized AI assistant"}
                   </span>
                 </motion.button>
               </motion.div>
