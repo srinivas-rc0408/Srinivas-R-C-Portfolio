@@ -490,16 +490,16 @@ export default function Home() {
               if (!reduceMotion) setHammockSwaying(true);
             }}
           >
-            {/* Cap at 1000px: the 800px source stays sharp (≤1.25× upscale)
-                instead of stretching to 100vw on desktop. quality 100 keeps
-                the optimizer from double-softening the upscale. */}
+            {/* Capped at 1200px from the 2000px-wide @2x source — always
+                downscaled, never stretched. quality 100 keeps the optimizer
+                from softening it. */}
             <Image
               src={HAMMOCK.src}
               width={HAMMOCK.w}
               height={HAMMOCK.h}
-              sizes="(min-width: 1000px) 1000px, 100vw"
+              sizes="(min-width: 1200px) 1200px, 100vw"
               quality={100}
-              className="mx-auto w-full max-w-[1000px]"
+              className="mx-auto w-full max-w-[1200px]"
               style={{ height: "auto" }}
               alt=""
             />
@@ -510,7 +510,7 @@ export default function Home() {
               aria-hidden
               className="absolute left-0 top-[31%] h-px"
               style={{
-                width: "max(0px, calc((100% - 1000px) / 2))",
+                width: "max(0px, calc((100% - 1200px) / 2))",
                 background:
                   "linear-gradient(to right, transparent, rgba(255,255,255,0.35))",
               }}
@@ -519,7 +519,7 @@ export default function Home() {
               aria-hidden
               className="absolute right-0 top-[10%] h-px"
               style={{
-                width: "max(0px, calc((100% - 1000px) / 2))",
+                width: "max(0px, calc((100% - 1200px) / 2))",
                 background:
                   "linear-gradient(to left, transparent, rgba(255,255,255,0.35))",
               }}

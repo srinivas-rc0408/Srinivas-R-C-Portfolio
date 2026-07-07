@@ -26,8 +26,10 @@ export const CAROUSEL: SpideyAsset[] = [
   // 6.png re-enters here ONLY after a watermark-free replacement is prepped
 ];
 
+// 11@2x.png = Lanczos 2.5x upscale of the trimmed 800x207 source, so the
+// scroll reveal serves near-2K sharp at desktop render widths.
 export const HAMMOCK: SpideyAsset = {
-  src: "/spiderman/11.png", w: 800, h: 207,
+  src: "/spiderman/11@2x.png", w: 2000, h: 517,
   anchor: "bottom", style: "movie",
 };
 
