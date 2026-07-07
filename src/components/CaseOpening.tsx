@@ -21,15 +21,16 @@ type Phase = "IDLE" | "OPENING" | "SPINNING" | "REVEAL" | "CLOSED";
 
 const TOTAL_SLOTS = 50;
 const TARGET_INDEX = 42;
-const SPIN_DURATION_MS = 6200;
+const SPIN_DURATION_MS = 4800;
 const SPIN_EASE: [number, number, number, number] = [0.12, 0.99, 0.08, 1];
 
 /* 3D case dimensions (px) — width, height, depth of the CSS box */
 const CASE_W = 230;
 const CASE_H = 140;
 const CASE_D = 120;
-/* How long the lid-open ceremony runs before the roulette takes over */
-const OPENING_MS = 1000;
+/* Unlock + lid ceremony: lock pops (~0.45s) → lid springs open → roulette */
+const OPENING_MS = 1400;
+const LID_DELAY_S = 0.45;
 
 const REDUCED_MOTION_QUERY = "(prefers-reduced-motion: reduce)";
 function subscribeReducedMotion(cb: () => void) {
@@ -276,7 +277,9 @@ export default function CaseOpening({ isOpen, onClose, onOpenDocument }: CaseOpe
         animate(caseScale, 1.03, { duration: 0.2 });
       },
     });
-    const openSound = setTimeout(() => audioRef.current?.landing(), 160);
+    const lockClick = setTimeout(() => audioRef.current?.tick(1), 120);
+    timeoutsRef.current.push(lockClick);
+    const openSound = setTimeout(() => audioRef.current?.landing(), LID_DELAY_S * 1000 + 150);
     timeoutsRef.current.push(openSound);
     const toSpin = setTimeout(() => setPhase("SPINNING"), OPENING_MS);
     timeoutsRef.current.push(toSpin);
@@ -481,7 +484,11 @@ export default function CaseOpening({ isOpen, onClose, onOpenDocument }: CaseOpe
                               ? { opacity: 1, scaleY: 1 }
                               : { opacity: 0, scaleY: 0.2 }
                           }
-                          transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
+                          transition={{
+                            duration: 0.45,
+                            ease: [0.22, 1, 0.36, 1],
+                            delay: phase === "OPENING" ? LID_DELAY_S + 0.1 : 0,
+                          }}
                         />
 
                         <motion.button
@@ -515,32 +522,32 @@ export default function CaseOpening({ isOpen, onClose, onOpenDocument }: CaseOpe
                           >
                             {/* back */}
                             <div
-                              className="absolute inset-0 border border-white/[0.06]"
+                              className="absolute inset-0 border border-red-500/10"
                               style={{
                                 transform: `rotateY(180deg) translateZ(${CASE_D / 2}px)`,
-                                background: "#0a0a0e",
+                                background: "#1c0608",
                               }}
                             />
                             {/* left */}
                             <div
-                              className="absolute top-0 border border-white/[0.06]"
+                              className="absolute top-0 border border-red-500/10"
                               style={{
                                 width: CASE_D,
                                 height: CASE_H,
                                 left: (CASE_W - CASE_D) / 2,
                                 transform: `rotateY(-90deg) translateZ(${CASE_W / 2}px)`,
-                                background: "linear-gradient(200deg, #12121a 0%, #08080b 100%)",
+                                background: "linear-gradient(200deg, #4c0d10 0%, #1a0507 100%)",
                               }}
                             />
                             {/* right */}
                             <div
-                              className="absolute top-0 border border-white/[0.06]"
+                              className="absolute top-0 border border-red-500/10"
                               style={{
                                 width: CASE_D,
                                 height: CASE_H,
                                 left: (CASE_W - CASE_D) / 2,
                                 transform: `rotateY(90deg) translateZ(${CASE_W / 2}px)`,
-                                background: "linear-gradient(160deg, #14141c 0%, #09090c 100%)",
+                                background: "linear-gradient(160deg, #581014 0%, #200608 100%)",
                               }}
                             />
                             {/* interior — red glow revealed when the lid opens */}
@@ -552,27 +559,58 @@ export default function CaseOpening({ isOpen, onClose, onOpenDocument }: CaseOpe
                                 top: (CASE_H - CASE_D) / 2,
                                 transform: `rotateX(90deg) translateZ(${CASE_H / 2 - 8}px)`,
                                 background:
-                                  "radial-gradient(ellipse at center, rgba(220,38,38,0.85) 0%, rgba(120,10,10,0.45) 55%, #0a0a0e 100%)",
+                                  "radial-gradient(ellipse at center, rgba(248,113,113,0.95) 0%, rgba(153,27,27,0.5) 55%, #14040a 100%)",
                               }}
                             />
                             {/* front */}
                             <div
-                              className="absolute inset-0 flex items-center justify-center border border-white/[0.08]"
+                              className="absolute inset-0 flex items-center justify-center border border-red-500/25"
                               style={{
                                 transform: `translateZ(${CASE_D / 2}px)`,
-                                background: "linear-gradient(160deg, #16161d 0%, #0a0a0e 100%)",
+                                background:
+                                  "linear-gradient(160deg, #7f1d1d 0%, #3d0a0e 55%, #1a0608 100%)",
                               }}
                             >
-                              <Package size={42} strokeWidth={1} className="text-white/55" />
+                              <Package size={40} strokeWidth={1} className="text-white/60" />
+                              {/* web-line detail */}
                               <div
                                 className="absolute inset-x-0 bottom-3 mx-auto h-px w-4/5"
                                 style={{
                                   background:
-                                    "linear-gradient(90deg, transparent, rgba(220,38,38,0.7), transparent)",
+                                    "linear-gradient(90deg, transparent, rgba(255,255,255,0.35), transparent)",
                                 }}
                               />
+                              {/* ── Padlock: shackle pops open, then the lock drops away ── */}
+                              <motion.div
+                                className="absolute -top-3 left-1/2 z-10 flex -translate-x-1/2 flex-col items-center"
+                                animate={
+                                  phase === "OPENING"
+                                    ? { opacity: 0, y: 30, rotate: 14 }
+                                    : { opacity: 1, y: 0, rotate: 0 }
+                                }
+                                transition={
+                                  phase === "OPENING"
+                                    ? { delay: 0.28, duration: 0.3, ease: "easeIn" }
+                                    : { duration: 0 }
+                                }
+                              >
+                                <motion.div
+                                  className="h-4 w-5 rounded-t-full border-2 border-b-0 border-zinc-300"
+                                  style={{ transformOrigin: "bottom left" }}
+                                  animate={{ rotate: phase === "OPENING" ? -60 : 0 }}
+                                  transition={{ type: "spring", stiffness: 500, damping: 18 }}
+                                />
+                                <div
+                                  className="flex h-6 w-7 items-center justify-center rounded-md"
+                                  style={{
+                                    background: "linear-gradient(180deg, #d4d4d8 0%, #71717a 100%)",
+                                  }}
+                                >
+                                  <div className="h-2 w-1 rounded-full bg-zinc-800" />
+                                </div>
+                              </motion.div>
                             </div>
-                            {/* lid — hinged at the back edge, springs open with overshoot */}
+                            {/* lid — hinged at the back edge, springs open after the lock pops */}
                             <div
                               className="absolute left-0"
                               style={{
@@ -584,19 +622,33 @@ export default function CaseOpening({ isOpen, onClose, onOpenDocument }: CaseOpe
                               }}
                             >
                               <motion.div
-                                className="absolute inset-0 border border-white/[0.08]"
+                                className="absolute inset-0 flex items-center justify-center border border-red-500/20"
                                 style={{
                                   transformOrigin: "top center",
                                   background:
-                                    "linear-gradient(180deg, #1d1d26 0%, #101016 100%)",
+                                    "linear-gradient(180deg, #991b1b 0%, #450a0a 100%)",
                                 }}
                                 animate={{ rotateX: phase === "OPENING" ? 112 : 0 }}
-                                transition={{ type: "spring", stiffness: 120, damping: 11 }}
+                                transition={{
+                                  type: "spring",
+                                  stiffness: 120,
+                                  damping: 11,
+                                  delay: phase === "OPENING" ? LID_DELAY_S : 0,
+                                }}
                               >
+                                {/* portfolio logo — same mark as the favicon */}
+                                <div
+                                  className="flex h-11 w-11 items-center justify-center rounded-full border"
+                                  style={{ borderColor: "#DC2626", background: "#050508" }}
+                                >
+                                  <span className="text-xl font-bold" style={{ color: "#DC2626" }}>
+                                    S
+                                  </span>
+                                </div>
                                 {/* latch on the front edge */}
                                 <div
                                   className="absolute bottom-1 left-1/2 h-2 w-8 -translate-x-1/2 rounded-sm"
-                                  style={{ background: "rgba(220,38,38,0.8)" }}
+                                  style={{ background: "rgba(255,255,255,0.35)" }}
                                 />
                               </motion.div>
                             </div>
