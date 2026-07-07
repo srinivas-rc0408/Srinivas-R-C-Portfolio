@@ -479,7 +479,7 @@ export default function Home() {
         <section className="relative min-h-screen w-full flex flex-col justify-center items-center py-24 bg-transparent z-20">
           {/* Hammock — full-bleed scroll reveal, top of this section. Not a background image. */}
           <motion.div
-            className="w-full"
+            className="relative w-full overflow-hidden"
             style={{ width: "100vw", transformOrigin: "top center" }}
             initial={reduceMotion ? false : "hidden"}
             whileInView={reduceMotion ? undefined : "visible"}
@@ -490,16 +490,39 @@ export default function Home() {
               if (!reduceMotion) setHammockSwaying(true);
             }}
           >
-            {/* quality 100: the 800px source is upscaled to 100vw, so give the
-                optimizer maximum source fidelity — no double softening. */}
+            {/* Cap at 1000px: the 800px source stays sharp (≤1.25× upscale)
+                instead of stretching to 100vw on desktop. quality 100 keeps
+                the optimizer from double-softening the upscale. */}
             <Image
               src={HAMMOCK.src}
               width={HAMMOCK.w}
               height={HAMMOCK.h}
-              sizes="100vw"
+              sizes="(min-width: 1000px) 1000px, 100vw"
               quality={100}
-              style={{ width: "100%", height: "auto" }}
+              className="mx-auto w-full max-w-[1000px]"
+              style={{ height: "auto" }}
               alt=""
+            />
+            {/* On wide screens the web strands continue to the viewport edges,
+                so the hammock still reads as strung across the whole screen.
+                Anchor rows measured from 11.png alpha: left 31%, right 10%. */}
+            <div
+              aria-hidden
+              className="absolute left-0 top-[31%] h-px"
+              style={{
+                width: "max(0px, calc((100% - 1000px) / 2))",
+                background:
+                  "linear-gradient(to right, transparent, rgba(255,255,255,0.35))",
+              }}
+            />
+            <div
+              aria-hidden
+              className="absolute right-0 top-[10%] h-px"
+              style={{
+                width: "max(0px, calc((100% - 1000px) / 2))",
+                background:
+                  "linear-gradient(to left, transparent, rgba(255,255,255,0.35))",
+              }}
             />
           </motion.div>
 
