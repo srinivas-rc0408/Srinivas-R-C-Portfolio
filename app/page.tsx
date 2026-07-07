@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useSyncExternalStore } from "react";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import {
   Menu,
@@ -12,6 +13,7 @@ import {
   Package,
   List,
   ArrowUp,
+  Zap,
 } from "lucide-react";
 import Link from "next/link";
 import CaseOpening from "@/src/components/CaseOpening";
@@ -34,6 +36,14 @@ function getIsMobileServerSnapshot() {
   return false;
 }
 
+/* ── First-load screen ────────────────────────────────────────────
+   Gates ONLY on real critical assets: 1.png + fonts. No artificial
+   minimum beyond the 300ms dismiss fade; a 4s cap fails open so a
+   hung asset can never trap the visitor. Repeat visits skip it
+   entirely via sessionStorage.                                     */
+const LOADER_MESSAGES = ["Spinning up the web…", "Anchoring web lines…", "Suiting up…"];
+type LoaderState = "pending" | "visible" | "leaving" | "done";
+
 /* ─── Component ─── */
 export default function Home() {
   const [gameOpen, setGameOpen] = useState(false);
@@ -43,8 +53,78 @@ export default function Home() {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const reduceMotion = useReducedMotion();
   const { openMenu } = useScrollStore();
+  const router = useRouter();
 
   const scrollToTop = () => window.scrollTo({ top: 0, behavior: "smooth" });
+
+  /* ── First-load screen state. Repeat visits (sessionStorage) start at
+     "done" and never see the loader; SSR starts "pending" (renders no
+     loader either, so hydration output matches). ── */
+  const [loaderState, setLoaderState] = useState<LoaderState>(() =>
+    typeof window !== "undefined" && sessionStorage.getItem("first-load-done") ? "done" : "pending"
+  );
+  const [msgIndex, setMsgIndex] = useState(0);
+  const heroLive = loaderState === "leaving" || loaderState === "done";
+
+  // First visit: show the loader on the next frame after mount.
+  useEffect(() => {
+    if (loaderState !== "pending") return;
+    const id = requestAnimationFrame(() => setLoaderState("visible"));
+    return () => cancelAnimationFrame(id);
+  }, [loaderState]);
+
+  // Wait for the REAL critical set: entry image + fonts (4s fail-open cap).
+  useEffect(() => {
+    if (loaderState !== "visible") return;
+    let cancelled = false;
+    const img = new window.Image();
+    const entryLoaded = new Promise<void>((resolve) => {
+      img.onload = () => resolve();
+      img.onerror = () => resolve();
+      img.src = ENTRY.src;
+    });
+    const fontsReady: Promise<unknown> = document.fonts?.ready ?? Promise.resolve();
+    const cap = new Promise<void>((resolve) => setTimeout(resolve, 4000));
+    Promise.race([Promise.all([entryLoaded, fontsReady]), cap]).then(() => {
+      if (cancelled) return;
+      sessionStorage.setItem("first-load-done", "1");
+      setLoaderState("leaving");
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [loaderState]);
+
+  // Owns the leaving→done transition (a separate effect: the state change
+  // re-runs the effect above, whose cleanup would cancel an inner timer).
+  useEffect(() => {
+    if (loaderState !== "leaving") return;
+    const t = setTimeout(() => setLoaderState("done"), 320);
+    return () => clearTimeout(t);
+  }, [loaderState]);
+
+  // Rotating message while visible.
+  useEffect(() => {
+    if (loaderState !== "visible") return;
+    const t = setInterval(() => setMsgIndex((i) => i + 1), 1100);
+    return () => clearInterval(t);
+  }, [loaderState]);
+
+  /* ── Idle prefetch once the hero is interactive: warm all carousel
+     images and the /projects + /details route chunks. ── */
+  useEffect(() => {
+    if (loaderState !== "done") return;
+    const idle = window.requestIdleCallback ?? ((cb: () => void) => window.setTimeout(cb, 300));
+    const cancelIdle = window.cancelIdleCallback ?? window.clearTimeout;
+    const id = idle(() => {
+      CAROUSEL.forEach((a) => {
+        new window.Image().src = a.src;
+      });
+      router.prefetch("/projects");
+      router.prefetch("/details");
+    });
+    return () => cancelIdle(id as number);
+  }, [loaderState, router]);
 
   /*
    * SPIDER-MAN HERO STATE — see SPIDERMAN-ASSETS-SPEC.md
@@ -69,10 +149,10 @@ export default function Home() {
      Reduced motion = render final state, no loops (DESIGN.md) —
      the entry pose stays, the carousel never starts. ── */
   useEffect(() => {
-    if (isMobile || reduceMotion) return;
+    if (isMobile || reduceMotion || !heroLive) return;
     const startDelay = setTimeout(() => setShowCarousel(true), 6000);
     return () => clearTimeout(startDelay);
-  }, [isMobile, reduceMotion]);
+  }, [isMobile, reduceMotion, heroLive]);
 
   /* ── Carousel tick ── */
   useEffect(() => {
@@ -113,6 +193,48 @@ export default function Home() {
 
   return (
     <>
+      {/* ── First-load screen — dismisses the moment critical assets are ready ── */}
+      {(loaderState === "visible" || loaderState === "leaving") && (
+        <motion.div
+          aria-hidden
+          className="pointer-events-none fixed inset-0 z-[200] flex flex-col items-center justify-center bg-[#050508]"
+          animate={{ opacity: loaderState === "leaving" ? 0 : 1 }}
+          transition={{ duration: 0.3 }}
+        >
+          {/* Web line draws down from the ceiling to the logo (transform-only) */}
+          <motion.div
+            className="absolute left-1/2 top-0 w-[1.5px] -translate-x-1/2"
+            style={{
+              height: "calc(50% - 56px)",
+              transformOrigin: "top",
+              background: "linear-gradient(to top, rgba(255,255,255,0.9), rgba(255,255,255,0.4))",
+            }}
+            initial={reduceMotion ? false : { scaleY: 0 }}
+            animate={{ scaleY: 1 }}
+            transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1] }}
+          />
+          {/* Lightning-S — same composition as the navbar trigger */}
+          <motion.div
+            className="relative flex items-center justify-center text-red-500"
+            initial={reduceMotion ? false : { opacity: 0, scale: 0.85 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: reduceMotion ? 0 : 0.5, duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+          >
+            <Zap size={44} className="absolute -left-5 text-yellow-500 opacity-80" />
+            <span className="text-6xl font-black italic tracking-tighter">S</span>
+          </motion.div>
+          <motion.p
+            key={msgIndex}
+            className="mt-8 text-[11px] font-semibold uppercase tracking-[0.3em] text-white/40"
+            initial={reduceMotion ? false : { opacity: 0, y: 6 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.35 }}
+          >
+            {LOADER_MESSAGES[msgIndex % LOADER_MESSAGES.length]}
+          </motion.p>
+        </motion.div>
+      )}
+
       {/* ── Game Feature Modal (non-blocking) ── */}
       <CaseOpening
         isOpen={gameOpen}
@@ -292,9 +414,9 @@ export default function Home() {
                 className="spidey-stage"
                 data-anchor={activeAsset.anchor}
                 initial={reduceMotion ? false : "hidden"}
-                animate="visible"
+                animate={reduceMotion || heroLive ? "visible" : "hidden"}
                 variants={entryDrop}
-                onAnimationComplete={() => setLanded(true)}
+                onAnimationComplete={(def) => def === "visible" && setLanded(true)}
               >
                 {/* initial={false}: the entry pose gets ONLY the spring drop,
                     never the crossfade blur-in on first paint. */}
