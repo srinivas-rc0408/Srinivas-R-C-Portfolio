@@ -148,6 +148,7 @@ export default function PortfolioGame() {
       lastX = 60;
       lastY = 60;
       minimapCamera!: Phaser.Cameras.Scene2D.Camera;
+      skid!: Phaser.GameObjects.Particles.ParticleEmitter;
 
       constructor() {
         super({ key: "MainScene" });
@@ -186,6 +187,12 @@ export default function PortfolioGame() {
         g.fillStyle(0x10b981, 1);
         g.fillCircle(20, 20, 13);
         g.generateTexture("stop_visited", 40, 40);
+        g.clear();
+
+        // Tire smoke puff for drifting
+        g.fillStyle(0x9ca3af, 1);
+        g.fillCircle(3, 3, 3);
+        g.generateTexture("smoke", 6, 6);
         g.clear();
 
         g.destroy();
@@ -228,9 +235,20 @@ export default function PortfolioGame() {
         this.player = this.physics.add.sprite(60, 60, "vehicle");
         this.player.setDamping(false);
         this.player.setDrag(0);
-        this.player.setMaxVelocity(stats.maxSpeed);
+        // no setMaxVelocity: Arcade clamps per-axis (distorts diagonals);
+        // the grip model clamps true forward speed instead
         this.player.setCollideWorldBounds(true);
         this.cameras.main.startFollow(this.player, true, 0.1, 0.1);
+
+        // Tire smoke while drifting
+        this.skid = this.add.particles(0, 0, "smoke", {
+          frequency: 22,
+          lifespan: 480,
+          alpha: { start: 0.32, end: 0 },
+          scale: { start: 1.2, end: 2.6 },
+          follow: this.player,
+          emitting: false,
+        });
 
         this.physics.add.collider(this.player, this.buildings);
         this.physics.add.overlap(this.player, stopsGroup, (_playerObj, stopObj) => {
@@ -262,6 +280,7 @@ export default function PortfolioGame() {
         this.minimapCamera.setBackgroundColor(0x000000);
         this.minimapCamera.ignore(roadGraphics);
         this.minimapCamera.ignore(this.buildings);
+        this.minimapCamera.ignore(this.skid);
 
         // Inputs
         if (this.input.keyboard) {
@@ -296,24 +315,43 @@ export default function PortfolioGame() {
           steer = jv.x;
         }
 
+        /* ── Grip model: velocity split into forward/lateral components.
+           Lateral velocity dies fast normally (the car tracks its nose);
+           braking while steering at speed keeps it alive → controlled drift. ── */
+        const forward = new Phaser.Math.Vector2(Math.cos(this.player.rotation), Math.sin(this.player.rotation));
+        const right = new Phaser.Math.Vector2(-forward.y, forward.x);
+        let vF = body.velocity.dot(forward);
+
+        const drifting = throttle < 0 && vF > stats.maxSpeed * 0.3 && steer !== 0;
+
         if (steer !== 0) {
-          this.player.rotation += Phaser.Math.DegToRad(stats.turnRate) * steer * dt;
+          // Steering scales with speed (no spinning in place), flips in reverse,
+          // and bites harder mid-drift for the slide feel.
+          const steerScale = Phaser.Math.Clamp(Math.abs(vF) / (stats.maxSpeed * 0.25), 0, 1);
+          const reverse = vF < -20 ? -1 : 1;
+          const driftBoost = drifting ? 1.45 : 1;
+          this.player.rotation +=
+            Phaser.Math.DegToRad(stats.turnRate) * steer * steerScale * reverse * driftBoost * dt;
+          forward.set(Math.cos(this.player.rotation), Math.sin(this.player.rotation));
+          right.set(-forward.y, forward.x);
+          vF = body.velocity.dot(forward);
         }
+        let vL = body.velocity.dot(right);
 
         if (throttle !== 0) {
-          const ax = Math.cos(this.player.rotation) * stats.accel * throttle;
-          const ay = Math.sin(this.player.rotation) * stats.accel * throttle;
-          body.velocity.x += ax * dt;
-          body.velocity.y += ay * dt;
+          vF += stats.accel * throttle * dt;
         } else {
-          body.velocity.x *= stats.friction;
-          body.velocity.y *= stats.friction;
+          vF *= Math.pow(stats.friction, dt * 60); // frame-rate independent coast
         }
 
-        const speed = body.velocity.length();
-        if (speed > stats.maxSpeed) {
-          body.velocity.scale(stats.maxSpeed / speed);
-        }
+        const grip = drifting ? 1.6 : 9;
+        vL *= Math.exp(-grip * dt);
+
+        vF = Phaser.Math.Clamp(vF, -stats.maxSpeed * 0.4, stats.maxSpeed);
+        body.velocity.x = forward.x * vF + right.x * vL;
+        body.velocity.y = forward.y * vF + right.y * vL;
+
+        this.skid.emitting = drifting;
 
         const moved = Phaser.Math.Distance.Between(this.lastX, this.lastY, this.player.x, this.player.y);
         tripStatsRef.current.distance += moved;
