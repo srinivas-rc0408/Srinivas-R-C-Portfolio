@@ -77,7 +77,7 @@ export default function Navbar({ onMenuTrigger }: NavbarProps) {
         <div className="flex-1 flex justify-center">
           <Link href="/" className="group">
             <span 
-              className="text-sm md:text-base font-bold tracking-[0.3em] text-white uppercase transition-all duration-500 group-hover:tracking-[0.4em] group-hover:drop-shadow-[0_0_10px_rgba(255,255,255,0.5)]" 
+              className="whitespace-nowrap text-xs tracking-[0.2em] md:text-base md:tracking-[0.3em] font-bold text-white uppercase transition-all duration-500 group-hover:tracking-[0.4em] group-hover:drop-shadow-[0_0_10px_rgba(255,255,255,0.5)]"
               style={{ fontFamily: "var(--font-geist-sans), system-ui, sans-serif" }}
             >
               SRINIVAS R.C

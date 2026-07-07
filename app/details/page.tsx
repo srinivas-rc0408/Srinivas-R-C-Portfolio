@@ -74,8 +74,8 @@ export default function DetailsPage() {
       {/* Background styling */}
       <div className="pointer-events-none fixed inset-0 z-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-red-900/20 via-[#050508] to-[#050508]" />
       
-      {/* ── FLOATING HEADER ── */}
-      <header className="sticky top-0 z-50 w-full border-b border-white/5 bg-black/60 backdrop-blur-2xl">
+      {/* ── FLOATING HEADER — offset below the fixed global navbar (~72px) ── */}
+      <header className="mt-[72px] sticky top-[72px] z-50 w-full border-b border-white/5 bg-black/60 backdrop-blur-2xl">
         <div className="mx-auto flex w-full max-w-7xl items-center justify-between px-6 py-4 md:px-12">
           
           <div className="flex items-center gap-6">

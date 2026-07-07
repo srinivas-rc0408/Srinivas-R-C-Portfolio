@@ -159,15 +159,31 @@ export default function Home() {
             .spidey-stage bottom:35svh really lands his feet at 65svh. */}
         <section className="relative h-svh w-full flex items-center bg-transparent">
 
-          {/* ── MAIN GRID ── */}
-          <div className="grid flex-1 grid-cols-2">
+          {/* ── MAIN GRID — single column below 768px, hero stacks ── */}
+          <div className="grid flex-1 grid-cols-1 md:grid-cols-2">
             {/* ─── LEFT COLUMN — Premium Content ─── */}
+            {/* Mobile: content starts below the hanging entry Spider-Man
+                (his bottom lands ≈36svh), so nothing runs under him. */}
             <motion.div
-              className="flex flex-col justify-center gap-8 px-10 md:px-16 lg:px-24"
+              className="flex flex-col justify-start gap-4 px-6 pt-[38svh] md:justify-center md:gap-6 md:px-16 md:pt-[72px] lg:px-24"
               variants={containerVariants}
               initial="hidden"
               animate="visible"
             >
+              {/* Name — Dominant anchor (DESIGN.md order: name, then location) */}
+              <motion.h1
+                id="hero-name"
+                variants={itemVariants}
+                className="text-[3.4rem] font-black leading-[0.95] tracking-tighter text-white md:text-8xl md:leading-none xl:text-9xl"
+                style={{
+                  fontFamily: "var(--font-geist-sans), system-ui, sans-serif",
+                }}
+              >
+                SRINIVAS.
+                <br />
+                <span className="text-white/90">R. C</span>
+              </motion.h1>
+
               {/* Location */}
               <motion.p
                 id="hero-location"
@@ -182,25 +198,10 @@ export default function Home() {
                 Location: Bengaluru, Karnataka
               </motion.p>
 
-              {/* Name — Dominant anchor */}
-              <motion.h1
-                id="hero-name"
-                variants={itemVariants}
-                className="text-8xl font-black leading-none tracking-tighter text-white xl:text-9xl"
-                style={{
-                  fontFamily: "var(--font-geist-sans), system-ui, sans-serif",
-                }}
-              >
-                SRINIVAS.
-                <br />
-                <span className="text-white/90">R. C</span>
-              </motion.h1>
-
-              {/* Description */}
               <motion.p
                 id="hero-info"
                 variants={itemVariants}
-                className="max-w-md text-lg leading-[1.8] text-gray-300"
+                className="text-[15px] leading-[1.65] text-gray-300 md:max-w-md md:text-lg md:leading-[1.8]"
               >
                 Aspiring AI Engineer building highly optimized agentic systems
                 and full-stack applications. Passionate about pushing the
@@ -223,7 +224,7 @@ export default function Home() {
                     backgroundColor: "rgba(255,255,255,0.1)",
                   }}
                   whileTap={{ scale: 0.97 }}
-                  className="flex cursor-pointer items-center gap-2.5 border border-white/20 bg-transparent px-10 py-4 text-sm font-medium text-white/80 transition-all duration-300 hover:text-white"
+                  className="flex cursor-pointer items-center gap-2.5 border border-white/20 bg-transparent px-6 py-3.5 text-sm font-medium text-white/80 transition-all duration-300 hover:text-white md:px-10 md:py-4"
                 >
                   <FileText size={16} strokeWidth={1.5} />
                   View Resume
@@ -237,7 +238,7 @@ export default function Home() {
                       backgroundColor: "rgba(255,255,255,0.1)",
                     }}
                     whileTap={{ scale: 0.97 }}
-                    className="flex cursor-pointer items-center gap-2.5 border border-white/20 bg-transparent px-10 py-4 text-sm font-medium text-white/80 transition-all duration-300 hover:text-white"
+                    className="flex cursor-pointer items-center gap-2.5 border border-white/20 bg-transparent px-6 py-3.5 text-sm font-medium text-white/80 transition-all duration-300 hover:text-white md:px-10 md:py-4"
                   >
                     <Info size={16} strokeWidth={1.5} />
                     View Details
@@ -327,9 +328,11 @@ export default function Home() {
 
                 {/* Soft landing glow — fades in once the drop settles.
                     Opacity/transform only; the blur is static, not animated. */}
+                {/* hidden on mobile: the short entry image hangs from the stage
+                    top there, so a stage-bottom glow would float detached */}
                 <motion.div
                   aria-hidden
-                  className="absolute -bottom-7 left-1/2 h-10 w-3/5 -translate-x-1/2 rounded-full blur-2xl"
+                  className="absolute -bottom-7 left-1/2 hidden h-10 w-3/5 -translate-x-1/2 rounded-full blur-2xl md:block"
                   style={{
                     background:
                       "radial-gradient(ellipse at center, rgba(220,38,38,0.45) 0%, rgba(220,38,38,0.12) 55%, transparent 80%)",
@@ -374,7 +377,7 @@ export default function Home() {
           </motion.div>
 
           {/* ── Sticky mini-header ── */}
-          <div className="sticky top-0 z-30 mb-12 flex w-full items-center justify-between border-b border-white/5 bg-black/60 px-6 py-4 backdrop-blur-xl md:px-12">
+          <div className="sticky top-[72px] z-30 mb-12 flex w-full items-center justify-between border-b border-white/5 bg-black/60 px-6 py-4 backdrop-blur-xl md:px-12">
             <div className="flex items-center gap-3 text-xs font-bold uppercase tracking-widest text-zinc-300">
               <span>SRINIVAS R.C</span>
               <span className="text-zinc-600">·</span>
