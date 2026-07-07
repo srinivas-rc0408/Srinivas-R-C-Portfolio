@@ -17,12 +17,19 @@ import { CaseAudio, isMuted as readMuted, setMuted as persistMuted, buildTickSch
    400ms crossfade reveal.
    ═══════════════════════════════════════════════════════════════ */
 
-type Phase = "IDLE" | "SPINNING" | "REVEAL" | "CLOSED";
+type Phase = "IDLE" | "OPENING" | "SPINNING" | "REVEAL" | "CLOSED";
 
 const TOTAL_SLOTS = 50;
 const TARGET_INDEX = 42;
 const SPIN_DURATION_MS = 6200;
 const SPIN_EASE: [number, number, number, number] = [0.12, 0.99, 0.08, 1];
+
+/* 3D case dimensions (px) — width, height, depth of the CSS box */
+const CASE_W = 230;
+const CASE_H = 140;
+const CASE_D = 120;
+/* How long the lid-open ceremony runs before the roulette takes over */
+const OPENING_MS = 1000;
 
 const REDUCED_MOTION_QUERY = "(prefers-reduced-motion: reduce)";
 function subscribeReducedMotion(cb: () => void) {
@@ -140,6 +147,9 @@ export default function CaseOpening({ isOpen, onClose, onOpenDocument }: CaseOpe
   const caseScale = useMotionValue(1);
   const tiltX = useMotionValue(0);
   const tiltY = useMotionValue(0);
+  /* Base 3/4 viewing angle + mouse tilt, fed straight to the 3D box */
+  const boxRotX = useTransform(tiltX, (v) => v - 16);
+  const boxRotY = useTransform(tiltY, (v) => v + 24);
 
   useEffect(() => {
     audioRef.current = new CaseAudio();
@@ -258,15 +268,18 @@ export default function CaseOpening({ isOpen, onClose, onOpenDocument }: CaseOpe
     );
     setStrip(built);
 
+    /* Anticipation squash → lid springs open (OPENING) → roulette */
+    setPhase("OPENING");
     animate(caseScale, 0.94, {
-      duration: 0.08,
+      duration: 0.09,
       onComplete: () => {
-        animate(caseScale, 1.06, {
-          duration: 0.12,
-          onComplete: () => setPhase("SPINNING"),
-        });
+        animate(caseScale, 1.03, { duration: 0.2 });
       },
     });
+    const openSound = setTimeout(() => audioRef.current?.landing(), 160);
+    timeoutsRef.current.push(openSound);
+    const toSpin = setTimeout(() => setPhase("SPINNING"), OPENING_MS);
+    timeoutsRef.current.push(toSpin);
   }, [phase, items, reducedMotion, caseScale]);
 
   /* ── Kick off the roulette once the strip has mounted and its width is known. ── */
@@ -416,51 +429,187 @@ export default function CaseOpening({ isOpen, onClose, onOpenDocument }: CaseOpe
                     stillness beat before REVEAL isn't followed by an extra
                     blank gap from a sequential exit-then-enter. */}
                 <AnimatePresence>
-                  {phase === "IDLE" && (
+                  {(phase === "IDLE" || phase === "OPENING") && (
                     <motion.div
                       key="idle"
-                      className="flex flex-col items-center gap-7"
+                      className="flex flex-col items-center gap-4"
                       initial={{ opacity: 0, y: 12 }}
                       animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: 40 }}
+                      exit={{ opacity: 0, scale: 1.08 }}
                       transition={{ duration: 0.3 }}
                     >
                       <span className="text-[10px] font-semibold uppercase tracking-[0.3em] text-white/25">Secret Archive</span>
 
-                      <div className="relative">
+                      {/* 3D case stage — extra headroom so the lid can swing open without clipping */}
+                      <div
+                        className="relative flex items-end justify-center"
+                        style={{ height: 270, width: CASE_W + 60, perspective: 1000 }}
+                      >
                         {/* Pseudo-layer glow — opacity-only pulse, never box-shadow directly */}
                         <motion.div
-                          className="pointer-events-none absolute -inset-6 rounded-3xl"
-                          style={{ boxShadow: "0 0 60px 20px rgba(220,38,38,0.5)" }}
-                          animate={{ opacity: [0.35, 0.75, 0.35] }}
-                          transition={{ duration: 2.2, repeat: Infinity, ease: "easeInOut" }}
+                          className="pointer-events-none absolute bottom-0 left-1/2 -translate-x-1/2 rounded-3xl"
+                          style={{ width: CASE_W, height: CASE_H, boxShadow: "0 0 60px 20px rgba(220,38,38,0.5)" }}
+                          animate={
+                            phase === "OPENING"
+                              ? { opacity: 1 }
+                              : reducedMotion
+                                ? { opacity: 0.5 }
+                                : { opacity: [0.35, 0.7, 0.35] }
+                          }
+                          transition={
+                            phase === "OPENING"
+                              ? { duration: 0.4 }
+                              : { duration: 2.2, repeat: Infinity, ease: "easeInOut" }
+                          }
                         />
+
+                        {/* Light beam bursting out of the opened case */}
+                        <motion.div
+                          aria-hidden
+                          className="pointer-events-none absolute left-1/2 -translate-x-1/2"
+                          style={{
+                            bottom: CASE_H - 15,
+                            width: 150,
+                            height: 165,
+                            transformOrigin: "bottom center",
+                            background:
+                              "linear-gradient(to top, rgba(220,38,38,0.55) 0%, rgba(220,38,38,0) 100%)",
+                          }}
+                          initial={false}
+                          animate={
+                            phase === "OPENING"
+                              ? { opacity: 1, scaleY: 1 }
+                              : { opacity: 0, scaleY: 0.2 }
+                          }
+                          transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
+                        />
+
                         <motion.button
                           onClick={handleSpin}
-                          onMouseMove={handleCaseMouseMove}
+                          disabled={phase !== "IDLE"}
+                          onMouseMove={phase === "IDLE" ? handleCaseMouseMove : undefined}
                           onMouseLeave={resetTilt}
-                          className="relative flex flex-col items-center gap-4 rounded-xl border border-white/10 px-14 py-10"
-                          style={{
-                            background: "linear-gradient(160deg, rgba(18,18,22,1) 0%, rgba(8,8,10,1) 100%)",
-                            scale: caseScale,
-                            rotateX: tiltX,
-                            rotateY: tiltY,
-                            transformPerspective: 600,
-                          }}
-                          animate={{ scale: [1, 1.03, 1] }}
-                          transition={{ duration: 2.2, repeat: Infinity, ease: "easeInOut" }}
-                          whileTap={{ scale: 0.95 }}
+                          aria-label="Open the case"
+                          className="relative block cursor-pointer disabled:cursor-default"
+                          style={{ scale: caseScale }}
+                          whileTap={phase === "IDLE" ? { scale: 0.95 } : undefined}
                         >
-                          <Package size={52} strokeWidth={1} className="text-white/60" />
+                          {/* The box: five faces + interior + hinged lid, true CSS 3D */}
+                          <motion.div
+                            className="relative"
+                            style={{
+                              width: CASE_W,
+                              height: CASE_H,
+                              transformStyle: "preserve-3d",
+                              rotateX: boxRotX,
+                              rotateY: boxRotY,
+                            }}
+                            animate={
+                              reducedMotion || phase === "OPENING" ? { y: 0 } : { y: [0, -6, 0] }
+                            }
+                            transition={
+                              phase === "IDLE" && !reducedMotion
+                                ? { duration: 2.4, repeat: Infinity, ease: "easeInOut" }
+                                : { duration: 0.3 }
+                            }
+                          >
+                            {/* back */}
+                            <div
+                              className="absolute inset-0 border border-white/[0.06]"
+                              style={{
+                                transform: `rotateY(180deg) translateZ(${CASE_D / 2}px)`,
+                                background: "#0a0a0e",
+                              }}
+                            />
+                            {/* left */}
+                            <div
+                              className="absolute top-0 border border-white/[0.06]"
+                              style={{
+                                width: CASE_D,
+                                height: CASE_H,
+                                left: (CASE_W - CASE_D) / 2,
+                                transform: `rotateY(-90deg) translateZ(${CASE_W / 2}px)`,
+                                background: "linear-gradient(200deg, #12121a 0%, #08080b 100%)",
+                              }}
+                            />
+                            {/* right */}
+                            <div
+                              className="absolute top-0 border border-white/[0.06]"
+                              style={{
+                                width: CASE_D,
+                                height: CASE_H,
+                                left: (CASE_W - CASE_D) / 2,
+                                transform: `rotateY(90deg) translateZ(${CASE_W / 2}px)`,
+                                background: "linear-gradient(160deg, #14141c 0%, #09090c 100%)",
+                              }}
+                            />
+                            {/* interior — red glow revealed when the lid opens */}
+                            <div
+                              className="absolute left-0"
+                              style={{
+                                width: CASE_W,
+                                height: CASE_D,
+                                top: (CASE_H - CASE_D) / 2,
+                                transform: `rotateX(90deg) translateZ(${CASE_H / 2 - 8}px)`,
+                                background:
+                                  "radial-gradient(ellipse at center, rgba(220,38,38,0.85) 0%, rgba(120,10,10,0.45) 55%, #0a0a0e 100%)",
+                              }}
+                            />
+                            {/* front */}
+                            <div
+                              className="absolute inset-0 flex items-center justify-center border border-white/[0.08]"
+                              style={{
+                                transform: `translateZ(${CASE_D / 2}px)`,
+                                background: "linear-gradient(160deg, #16161d 0%, #0a0a0e 100%)",
+                              }}
+                            >
+                              <Package size={42} strokeWidth={1} className="text-white/55" />
+                              <div
+                                className="absolute inset-x-0 bottom-3 mx-auto h-px w-4/5"
+                                style={{
+                                  background:
+                                    "linear-gradient(90deg, transparent, rgba(220,38,38,0.7), transparent)",
+                                }}
+                              />
+                            </div>
+                            {/* lid — hinged at the back edge, springs open with overshoot */}
+                            <div
+                              className="absolute left-0"
+                              style={{
+                                width: CASE_W,
+                                height: CASE_D,
+                                top: (CASE_H - CASE_D) / 2,
+                                transformStyle: "preserve-3d",
+                                transform: `rotateX(90deg) translateZ(${CASE_H / 2}px)`,
+                              }}
+                            >
+                              <motion.div
+                                className="absolute inset-0 border border-white/[0.08]"
+                                style={{
+                                  transformOrigin: "top center",
+                                  background:
+                                    "linear-gradient(180deg, #1d1d26 0%, #101016 100%)",
+                                }}
+                                animate={{ rotateX: phase === "OPENING" ? 112 : 0 }}
+                                transition={{ type: "spring", stiffness: 120, damping: 11 }}
+                              >
+                                {/* latch on the front edge */}
+                                <div
+                                  className="absolute bottom-1 left-1/2 h-2 w-8 -translate-x-1/2 rounded-sm"
+                                  style={{ background: "rgba(220,38,38,0.8)" }}
+                                />
+                              </motion.div>
+                            </div>
+                          </motion.div>
                         </motion.button>
                       </div>
 
                       <motion.span
                         className="text-sm font-medium uppercase tracking-[0.15em] text-white/40"
-                        animate={{ opacity: [0.4, 1, 0.4] }}
+                        animate={reducedMotion ? { opacity: 1 } : { opacity: [0.4, 1, 0.4] }}
                         transition={{ duration: 1.8, repeat: Infinity, ease: "easeInOut" }}
                       >
-                        Click to Open
+                        {phase === "OPENING" ? "Opening…" : "Click to Open"}
                       </motion.span>
                     </motion.div>
                   )}
