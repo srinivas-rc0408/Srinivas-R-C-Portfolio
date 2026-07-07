@@ -63,7 +63,7 @@ export default function FeedbackInbox() {
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
                   <motion.button
-                    whileTap={{ scale: 0.9 }}
+                    whileTap={{ scale: 0.95 }}
                     onClick={() => toggle(item.id, "isRead", !item.isRead)}
                     title={item.isRead ? "Mark unread" : "Mark read"}
                     className={`rounded-lg p-2 transition-colors ${
@@ -73,7 +73,7 @@ export default function FeedbackInbox() {
                     {item.isRead ? <CheckCircle2 size={16} /> : <Circle size={16} />}
                   </motion.button>
                   <motion.button
-                    whileTap={{ scale: 0.9 }}
+                    whileTap={{ scale: 0.95 }}
                     onClick={() => toggle(item.id, "isFlagged", !item.isFlagged)}
                     title={item.isFlagged ? "Unflag" : "Flag"}
                     className={`rounded-lg p-2 transition-colors ${

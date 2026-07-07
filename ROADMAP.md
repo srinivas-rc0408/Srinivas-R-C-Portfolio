@@ -3,8 +3,8 @@ Rule: one phase per session. Verify in browser → commit → push → tick the 
 
 - [x] **Phase 1 — Database:** SQLite → Neon Postgres via Prisma. 3 API routes rewritten, same JSON contracts.
 - [ ] **Phase 2 — Dead code purge:** duplicate CaseOpening, unreachable GameFeature/GamifiedOverlay, stray imports/dirs.
-- [ ] **Phase 3 — Spider-Man to spec:** trim script, entry drop (1.png), 7-image carousel, web line, hammock scroll reveal.
-- [ ] **Phase 4 — Interaction QA:** whileTap everywhere, modal behavior (X/outside/Escape), reduced-motion, zero `any`.
+- [x] **Phase 3 — Spider-Man to spec:** trim script, entry drop (1.png), 7-image carousel, web line, hammock scroll reveal.
+- [x] **Phase 4 — Interaction QA:** whileTap everywhere, modal behavior (X/outside/Escape), reduced-motion, zero `any`.
 - [x] **Phase 5 — Projects, real:** Project model + API + seed 4 real projects, detail page (short vs long info), admin persistence.
 - [x] **Phase 6 — Documents & certs:** R2 presigned uploads, react-pdf viewer w/ ←→, certifications from DB + admin upload.
 - [ ] **🚀 DEPLOY CHECKPOINT:** Vercel live, URL on resume. Same day Phase 6 passes.

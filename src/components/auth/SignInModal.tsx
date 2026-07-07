@@ -81,6 +81,7 @@ export default function SignInModal({ isOpen, onClose, initialTab = "guest", mes
             <motion.button
               whileTap={{ scale: 0.95 }}
               onClick={onClose}
+              aria-label="Close"
               className="absolute right-4 top-4 rounded-lg p-2 text-zinc-500 transition-colors hover:bg-white/10 hover:text-white"
             >
               <X size={18} />

@@ -337,33 +337,38 @@ export default function Home() {
                 variants={itemVariants}
                 className="flex flex-wrap gap-4"
               >
+                {/* Primary — red accent glass */}
                 <motion.button
                   id="btn-resume"
                   onClick={() => setResumeOpen(true)}
-                  whileHover={{
-                    scale: 1.03,
-                    borderColor: "rgba(255,255,255,0.6)",
-                    backgroundColor: "rgba(255,255,255,0.1)",
-                  }}
-                  whileTap={{ scale: 0.97 }}
-                  className="flex cursor-pointer items-center gap-2.5 border border-white/20 bg-transparent px-6 py-3.5 text-sm font-medium text-white/80 transition-all duration-300 hover:text-white md:px-10 md:py-4"
+                  whileHover={{ y: -2, scale: 1.02 }}
+                  whileTap={{ scale: 0.95 }}
+                  className="group relative flex cursor-pointer items-center gap-2.5 overflow-hidden rounded-xl border border-red-500/40 bg-red-600/15 px-6 py-3.5 text-sm font-semibold text-white backdrop-blur-xl transition-colors duration-300 hover:border-red-500/70 hover:bg-red-600/25 md:px-10 md:py-4"
                 >
-                  <FileText size={16} strokeWidth={1.5} />
-                  View Resume
+                  {/* glow layer — opacity-only, never animated box-shadow */}
+                  <span
+                    aria-hidden
+                    className="pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-300 group-hover:opacity-100"
+                    style={{ boxShadow: "0 0 24px rgba(220,38,38,0.45), inset 0 0 12px rgba(220,38,38,0.15)" }}
+                  />
+                  <FileText size={16} strokeWidth={1.5} className="relative z-10 text-red-400" />
+                  <span className="relative z-10">View Resume</span>
                 </motion.button>
+                {/* Secondary — neutral glass */}
                 <Link href="/details">
                   <motion.button
                     id="btn-details"
-                    whileHover={{
-                      scale: 1.03,
-                      borderColor: "rgba(255,255,255,0.6)",
-                      backgroundColor: "rgba(255,255,255,0.1)",
-                    }}
-                    whileTap={{ scale: 0.97 }}
-                    className="flex cursor-pointer items-center gap-2.5 border border-white/20 bg-transparent px-6 py-3.5 text-sm font-medium text-white/80 transition-all duration-300 hover:text-white md:px-10 md:py-4"
+                    whileHover={{ y: -2, scale: 1.02 }}
+                    whileTap={{ scale: 0.95 }}
+                    className="group relative flex cursor-pointer items-center gap-2.5 overflow-hidden rounded-xl border border-white/10 bg-white/5 px-6 py-3.5 text-sm font-semibold text-white/80 backdrop-blur-xl transition-colors duration-300 hover:border-white/25 hover:bg-white/10 hover:text-white md:px-10 md:py-4"
                   >
-                    <Info size={16} strokeWidth={1.5} />
-                    View Details
+                    <span
+                      aria-hidden
+                      className="pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-300 group-hover:opacity-100"
+                      style={{ boxShadow: "0 0 20px rgba(255,255,255,0.12)" }}
+                    />
+                    <Info size={16} strokeWidth={1.5} className="relative z-10" />
+                    <span className="relative z-10">View Details</span>
                   </motion.button>
                 </Link>
               </motion.div>
@@ -374,7 +379,7 @@ export default function Home() {
                   id="btn-ai"
                   onClick={() => setAiTeased(true)}
                   whileHover={{ scale: 1.02, boxShadow: "0 0 25px rgba(220,38,38,0.5)" }}
-                  whileTap={{ scale: 0.98 }}
+                  whileTap={{ scale: 0.95 }}
                   className="glow-pulse relative flex w-full cursor-pointer flex-col items-start gap-1 overflow-hidden border border-red-500/30 px-8 py-5 transition-all duration-300"
                   style={{
                     background:
@@ -550,7 +555,7 @@ export default function Home() {
               <div className="h-16 w-16 flex items-center justify-center rounded-full bg-red-500/10 border border-red-500/20 text-red-500">
                 <Package size={32} strokeWidth={1.5} />
               </div>
-              <h3 className="text-xl font-bold text-white tracking-widest uppercase">System Vault</h3>
+              <h2 className="text-xl font-bold text-white tracking-widest uppercase">System Vault</h2>
               <p className="text-sm text-zinc-400">Open chest to see my details</p>
             </motion.div>
 
@@ -568,7 +573,7 @@ export default function Home() {
                 <div className="h-16 w-16 flex items-center justify-center rounded-full bg-white/5 border border-white/10 text-white">
                   <List size={32} strokeWidth={1.5} />
                 </div>
-                <h3 className="text-xl font-bold text-white tracking-widest uppercase">Master Record</h3>
+                <h2 className="text-xl font-bold text-white tracking-widest uppercase">Master Record</h2>
                 <p className="text-sm text-zinc-400">View All Details</p>
               </motion.div>
             </Link>
@@ -588,7 +593,7 @@ export default function Home() {
                 <div className="h-16 w-16 flex items-center justify-center rounded-full bg-red-500/20 border border-red-500/40 text-red-400 relative z-10">
                   <Gamepad2 size={32} strokeWidth={1.5} />
                 </div>
-                <h3 className="text-xl font-bold text-white tracking-widest uppercase relative z-10">Interactive Mode</h3>
+                <h2 className="text-xl font-bold text-white tracking-widest uppercase relative z-10">Interactive Mode</h2>
                 <p className="text-sm text-zinc-400 relative z-10">Play my portfolio game</p>
               </motion.div>
             </Link>

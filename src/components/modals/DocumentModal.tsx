@@ -111,7 +111,7 @@ export default function DocumentModal({ isOpen, onClose, type, gated = true }: D
                 <span className="text-zinc-500">SRINIVAS R.C&apos;s</span> {title}
               </h2>
               <motion.button
-                whileTap={{ scale: 0.9 }}
+                whileTap={{ scale: 0.95 }}
                 onClick={onClose}
                 className="rounded-lg p-2 text-zinc-400 transition-colors hover:bg-white/10 hover:text-white"
               >
@@ -137,7 +137,7 @@ export default function DocumentModal({ isOpen, onClose, type, gated = true }: D
             {fileUrl && numPages > 0 && (
               <div className="flex shrink-0 items-center justify-center gap-4 border-t border-white/5 bg-black/40 py-2">
                 <motion.button
-                  whileTap={{ scale: 0.9 }}
+                  whileTap={{ scale: 0.95 }}
                   onClick={() => setPageNumber((p) => Math.max(1, p - 1))}
                   disabled={pageNumber <= 1}
                   className="rounded-lg p-2 text-zinc-400 transition-colors hover:bg-white/10 hover:text-white disabled:opacity-30"
@@ -148,7 +148,7 @@ export default function DocumentModal({ isOpen, onClose, type, gated = true }: D
                   Page {pageNumber} / {numPages}
                 </span>
                 <motion.button
-                  whileTap={{ scale: 0.9 }}
+                  whileTap={{ scale: 0.95 }}
                   onClick={() => setPageNumber((p) => Math.min(numPages, p + 1))}
                   disabled={pageNumber >= numPages}
                   className="rounded-lg p-2 text-zinc-400 transition-colors hover:bg-white/10 hover:text-white disabled:opacity-30"
@@ -168,7 +168,7 @@ export default function DocumentModal({ isOpen, onClose, type, gated = true }: D
                 <motion.a
                   href="mailto:srinivasrc0408@gmail.com"
                   whileHover={{ y: -3, boxShadow: "0px 10px 20px rgba(220, 38, 38, 0.3)" }}
-                  whileTap={{ scale: 0.9 }}
+                  whileTap={{ scale: 0.95 }}
                   className="flex items-center justify-center rounded-lg border border-zinc-800 bg-zinc-900 p-2.5 text-zinc-300 transition-colors hover:border-red-500 hover:text-white"
                   title="Contact via Email"
                 >

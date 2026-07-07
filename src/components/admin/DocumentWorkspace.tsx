@@ -109,7 +109,7 @@ export default function DocumentWorkspace({ type }: DocumentWorkspaceProps) {
           )}
         </div>
         <motion.button
-          whileTap={{ scale: 0.98 }}
+          whileTap={{ scale: 0.95 }}
           disabled={!data?.fileUrl}
           onClick={() => setViewerOpen(true)}
           className="flex items-center gap-2 rounded-lg bg-white/5 px-4 py-2 text-xs font-bold uppercase tracking-widest text-white transition-colors hover:bg-white/10 disabled:opacity-30 disabled:pointer-events-none"
@@ -134,7 +134,7 @@ export default function DocumentWorkspace({ type }: DocumentWorkspaceProps) {
             <span className="text-xs font-semibold text-zinc-400">{progress}%</span>
             <motion.button
               type="button"
-              whileTap={{ scale: 0.9 }}
+              whileTap={{ scale: 0.95 }}
               onClick={(e) => {
                 e.preventDefault();
                 xhrRef.current?.abort();
@@ -155,7 +155,7 @@ export default function DocumentWorkspace({ type }: DocumentWorkspaceProps) {
       {error && <p className="text-xs text-red-400">{error}</p>}
 
       <motion.button
-        whileTap={{ scale: 0.98 }}
+        whileTap={{ scale: 0.95 }}
         disabled={!data}
         onClick={togglePrivate}
         className={`flex items-center justify-center gap-2 self-start rounded-lg px-4 py-2 text-xs font-bold uppercase tracking-widest transition-colors disabled:opacity-30 ${

@@ -159,7 +159,7 @@ export default function ShareButton({ documentType }: ShareButtonProps) {
                           animate={{ opacity: 1, scale: 1 }}
                           exit={{ opacity: 0, scale: 0.9 }}
                           whileHover={{ scale: 1.02 }}
-                          whileTap={{ scale: 0.98 }}
+                          whileTap={{ scale: 0.95 }}
                         >
                           Send Document
                         </motion.button>

@@ -64,7 +64,7 @@ export default function CertificateModal({ isOpen, onClose, certificate }: Certi
             <div className="flex shrink-0 items-center justify-between border-t border-white/5 bg-black/80 px-6 py-4 backdrop-blur-md">
               <div className="flex items-center gap-4">
                 <motion.button
-                  whileTap={{ scale: 0.9 }}
+                  whileTap={{ scale: 0.95 }}
                   className="rounded-lg p-2.5 text-zinc-400 transition-colors hover:bg-white/10 hover:text-white"
                   title="More options"
                 >
@@ -73,7 +73,7 @@ export default function CertificateModal({ isOpen, onClose, certificate }: Certi
                 <motion.a
                   href={certificate.imageUrl}
                   download
-                  whileTap={{ scale: 0.9 }}
+                  whileTap={{ scale: 0.95 }}
                   className="rounded-lg p-2.5 text-zinc-400 transition-colors hover:bg-white/10 hover:text-white"
                   title="Download"
                 >
@@ -81,7 +81,7 @@ export default function CertificateModal({ isOpen, onClose, certificate }: Certi
                 </motion.a>
                 <motion.a
                   href="mailto:srinivasrc0408@gmail.com"
-                  whileTap={{ scale: 0.9 }}
+                  whileTap={{ scale: 0.95 }}
                   className="rounded-lg p-2.5 text-zinc-400 transition-colors hover:bg-white/10 hover:text-white"
                   title="Contact via Email"
                 >

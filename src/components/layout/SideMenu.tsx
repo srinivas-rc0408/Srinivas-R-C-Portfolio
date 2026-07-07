@@ -89,8 +89,9 @@ export default function SideMenu({ isOpen, onClose }: SideMenuProps) {
             <div className="flex h-16 shrink-0 items-center justify-between px-6 border-b border-white/5">
               <span className="text-[10px] font-bold tracking-[0.2em] text-zinc-500 uppercase">System Nav</span>
               <motion.button
-                whileTap={{ scale: 0.9 }}
+                whileTap={{ scale: 0.95 }}
                 onClick={onClose}
+                aria-label="Close menu"
                 className="rounded-lg p-2 text-zinc-400 transition-colors hover:bg-white/10 hover:text-white"
               >
                 <X size={18} strokeWidth={2.5} />

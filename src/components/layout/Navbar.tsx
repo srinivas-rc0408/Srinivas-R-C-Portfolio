@@ -50,6 +50,7 @@ export default function Navbar({ onMenuTrigger }: NavbarProps) {
           {/* Menu Trigger (Lightning S) */}
           <motion.button
             onClick={onMenuTrigger}
+            aria-label="Open menu"
             whileHover={{ scale: 1.1, textShadow: "0 0 8px rgba(255,255,255,0.8)" }}
             whileTap={{ scale: 0.95 }}
             className="group relative flex items-center justify-center p-2 rounded-xl transition-all duration-300 hover:shadow-[0_0_20px_rgba(220,38,38,0.5)] bg-white/5 hover:bg-white/10"
@@ -61,10 +62,11 @@ export default function Navbar({ onMenuTrigger }: NavbarProps) {
           </motion.button>
 
           {/* NEW Home Button */}
-          <Link href="/">
+          <Link href="/" aria-label="Home">
             <motion.button
+              aria-label="Home"
               whileHover={{ scale: 1.1 }}
-              whileTap={{ scale: 0.9 }}
+              whileTap={{ scale: 0.95 }}
               className="flex items-center justify-center p-2 rounded-xl text-white/60 hover:text-white hover:drop-shadow-[0_0_10px_rgba(255,255,255,0.8)] transition-all duration-300"
             >
               <Home size={18} />
@@ -89,6 +91,7 @@ export default function Navbar({ onMenuTrigger }: NavbarProps) {
         <div className="flex-1 flex justify-end">
           <motion.button
             onClick={() => setIsSignInOpen(true)}
+            aria-label="Sign in"
             whileTap={{ scale: 0.95 }}
             className="flex items-center gap-2 rounded-lg bg-white/10 px-5 py-2 text-xs font-semibold uppercase tracking-widest text-white transition-colors duration-300 hover:bg-white hover:text-black shadow-lg"
           >

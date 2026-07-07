@@ -50,8 +50,9 @@ export default function ProjectsPage() {
         <header className="sticky top-[72px] z-50 w-full border-b border-white/5 bg-black/60 backdrop-blur-2xl">
           <div className="mx-auto flex w-full max-w-7xl items-center justify-between px-6 py-4 md:px-12">
             <div className="flex items-center gap-4">
-              <Link href="/">
+              <Link href="/" aria-label="Back to home">
                 <motion.button
+                  aria-label="Back to home"
                   whileHover={{ x: -2 }}
                   whileTap={{ scale: 0.95 }}
                   className="flex items-center justify-center rounded-lg bg-white/5 p-2 text-zinc-400 transition-colors hover:bg-white/10 hover:text-white"
@@ -91,8 +92,9 @@ export default function ProjectsPage() {
                 <motion.button
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
-                  whileTap={{ scale: 0.9 }}
+                  whileTap={{ scale: 0.95 }}
                   onClick={() => setSearchQuery("")}
+                  aria-label="Clear search"
                   className="rounded-full bg-white/10 p-1 text-zinc-400 hover:bg-white/20 hover:text-white"
                 >
                   <X size={16} />
@@ -133,6 +135,7 @@ export default function ProjectsPage() {
                             target="_blank"
                             rel="noopener noreferrer"
                             onClick={(e) => e.stopPropagation()}
+                            aria-label={`${project.title} on GitHub`}
                             className="text-zinc-500 hover:text-white transition-colors"
                           >
                             <ExternalLink size={20} />

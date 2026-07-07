@@ -214,7 +214,7 @@ export default function AdminLoginPage() {
                   letterSpacing: "0.12em",
                 }}
                 whileHover={{ scale: 1.01, background: "rgba(255,255,255,0.9)" }}
-                whileTap={{ scale: 0.98 }}
+                whileTap={{ scale: 0.95 }}
               >
                 {loading ? (
                   <motion.div

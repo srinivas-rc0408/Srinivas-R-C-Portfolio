@@ -453,7 +453,7 @@ export default function PortfolioGame() {
       {/* ── Exit ── */}
       <motion.button
         whileHover={{ scale: 1.1, rotate: 90 }}
-        whileTap={{ scale: 0.9 }}
+        whileTap={{ scale: 0.95 }}
         onClick={requestExit}
         className="absolute right-8 top-8 z-[110] flex h-12 w-12 items-center justify-center rounded-full bg-red-600 text-white shadow-[0_0_20px_rgba(220,38,38,0.4)] transition-colors hover:bg-red-500"
       >

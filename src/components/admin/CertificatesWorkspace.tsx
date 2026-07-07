@@ -104,7 +104,7 @@ export default function CertificatesWorkspace() {
         </div>
         {selected.size > 0 && (
           <motion.button
-            whileTap={{ scale: 0.98 }}
+            whileTap={{ scale: 0.95 }}
             onClick={() => setConfirmOpen(true)}
             className="flex items-center gap-2 rounded-lg bg-red-500 px-4 py-2 text-xs font-bold uppercase tracking-widest text-white transition-colors hover:bg-red-600"
           >

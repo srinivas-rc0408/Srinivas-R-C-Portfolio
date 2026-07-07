@@ -81,7 +81,7 @@ export default function TextWorkspace({ sectionTitle }: TextWorkspaceProps) {
         </div>
         <div className="flex items-center gap-3">
           <motion.button
-            whileTap={{ scale: 0.98 }}
+            whileTap={{ scale: 0.95 }}
             onClick={handleReset}
             disabled={!isModified && !hasStaged}
             className="flex items-center gap-2 rounded-lg bg-white/5 px-4 py-2 text-xs font-bold uppercase tracking-widest text-zinc-400 transition-colors hover:bg-white/10 hover:text-white disabled:opacity-30 disabled:pointer-events-none"
@@ -90,7 +90,7 @@ export default function TextWorkspace({ sectionTitle }: TextWorkspaceProps) {
           </motion.button>
           
           <motion.button
-            whileTap={{ scale: 0.98 }}
+            whileTap={{ scale: 0.95 }}
             onClick={stageChanges}
             disabled={!isModified}
             className={`flex items-center gap-2 rounded-lg px-6 py-2 text-xs font-bold uppercase tracking-widest transition-all ${
