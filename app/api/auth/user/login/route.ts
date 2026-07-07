@@ -4,7 +4,13 @@ import { NextRequest, NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import { z } from "zod";
 import { prisma } from "@/lib/db";
-import { createUserToken, setUserSessionCookie } from "@/lib/auth";
+import {
+  createToken,
+  createUserToken,
+  setSessionCookie,
+  setUserSessionCookie,
+  validateCredentials,
+} from "@/lib/auth";
 import { checkLoginRateLimit, getClientIp } from "@/lib/rateLimit";
 
 /* ═══════════════════════════════════════════════════════════════
@@ -51,7 +57,20 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const result = await loginUser(await request.json());
+    const body = await request.json();
+
+    // Owner path: admin credentials entered in the visitor sign-in grant the
+    // admin session directly — there is no separate admin gateway page.
+    if (
+      typeof body?.email === "string" &&
+      typeof body?.password === "string" &&
+      validateCredentials(body.email, body.password)
+    ) {
+      await setSessionCookie(await createToken(body.email));
+      return NextResponse.json({ success: true, admin: true });
+    }
+
+    const result = await loginUser(body);
     if (!result.ok) {
       return NextResponse.json({ error: result.error }, { status: result.status });
     }

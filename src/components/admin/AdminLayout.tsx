@@ -18,6 +18,7 @@ import {
   Share2,
   Users,
   Mail,
+  LogOut,
 } from "lucide-react";
 
 interface FeedbackRow {
@@ -224,13 +225,27 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             {/* Profile Thumbnail */}
             <div className="flex items-center gap-3 pl-4 border-l border-white/10">
               <div className="hidden lg:flex flex-col items-end text-[10px]">
-                <span className="font-bold text-zinc-200 uppercase tracking-widest">SrinivasRC</span>
+                <span className="font-bold text-zinc-200 uppercase tracking-widest whitespace-nowrap">Srinivas R C</span>
                 <span className="text-zinc-600">Bengaluru</span>
               </div>
               <div className="h-8 w-8 rounded-full bg-zinc-800 border border-white/20 flex items-center justify-center overflow-hidden">
                 <span className="text-xs font-bold text-zinc-500">SRC</span>
               </div>
             </div>
+
+            {/* Log out */}
+            <motion.button
+              whileTap={{ scale: 0.95 }}
+              onClick={async () => {
+                await fetch("/api/auth/logout", { method: "POST" });
+                window.location.assign("/");
+              }}
+              aria-label="Log out"
+              title="Log out"
+              className="flex h-8 w-8 items-center justify-center rounded-full bg-white/5 text-zinc-400 transition-colors hover:bg-red-500/20 hover:text-red-400"
+            >
+              <LogOut size={15} />
+            </motion.button>
           </div>
         </header>
 

@@ -9,6 +9,6 @@ export default async function AdminDashboardLayout({
 }) {
   const token = await getSessionCookie();
   const payload = token ? await verifyToken(token) : null;
-  if (payload?.role !== "admin") redirect("/admin");
+  if (payload?.role !== "admin") redirect("/");
   return children;
 }

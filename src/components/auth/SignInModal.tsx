@@ -3,13 +3,15 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Lock, Mail, User, Phone, Loader2, LogOut } from "lucide-react";
-import Link from "next/link";
 import { useAuth } from "@/src/hooks/useAuth";
 import { useEscape } from "@/src/hooks/useEscape";
 
 /** Surface the API's real error. Non-JSON body (platform crash page) → status-based
     message instead of a generic catch-all; thrown fetch = network failure. */
-async function postJson(url: string, body: unknown): Promise<{ ok: boolean; error?: string }> {
+async function postJson(
+  url: string,
+  body: unknown
+): Promise<{ ok: boolean; error?: string; data?: Record<string, unknown> }> {
   let res: Response;
   try {
     res = await fetch(url, {
@@ -20,7 +22,13 @@ async function postJson(url: string, body: unknown): Promise<{ ok: boolean; erro
   } catch {
     return { ok: false, error: "Network error — check your connection and try again." };
   }
-  if (res.ok) return { ok: true };
+  if (res.ok) {
+    try {
+      return { ok: true, data: await res.json() };
+    } catch {
+      return { ok: true };
+    }
+  }
   let error: string | undefined;
   try {
     error = (await res.json()).error;
@@ -117,19 +125,24 @@ export default function SignInModal({ isOpen, onClose, initialTab = "guest", mes
 
                 {tab === "guest" && <GuestTab onDone={onClose} setGuestName={setGuestName} />}
                 {tab === "signin" && (
-                  <SignInTab onSuccess={() => { refresh(); onClose(); onAuthenticated?.(); }} />
+                  <SignInTab
+                    onSuccess={(data) => {
+                      if (data?.admin) {
+                        // Owner signed in — straight to the dashboard.
+                        window.location.assign("/admin/dashboard");
+                        return;
+                      }
+                      refresh();
+                      onClose();
+                      onAuthenticated?.();
+                    }}
+                  />
                 )}
                 {tab === "register" && (
                   <RegisterTab onSuccess={() => { refresh(); onClose(); onAuthenticated?.(); }} />
                 )}
 
-                {/* This modal is for visitors — the owner signs in at /admin. */}
-                <p className="mt-6 border-t border-white/5 pt-4 text-center text-[10px] text-zinc-600">
-                  This sign-in is for visitors.{" "}
-                  <Link href="/admin" onClick={onClose} className="font-semibold text-zinc-400 underline-offset-2 transition-colors hover:text-white hover:underline">
-                    Admin?
-                  </Link>
-                </p>
+                {/* Owner signs in here too — admin credentials route straight to the dashboard. */}
               </>
             )}
           </motion.div>
@@ -204,7 +217,7 @@ function GuestTab({ onDone, setGuestName }: { onDone: () => void; setGuestName: 
 }
 
 /* ── Sign in tab ── */
-function SignInTab({ onSuccess }: { onSuccess: () => void }) {
+function SignInTab({ onSuccess }: { onSuccess: (data?: Record<string, unknown>) => void }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -220,7 +233,7 @@ function SignInTab({ onSuccess }: { onSuccess: () => void }) {
       setError(result.error!);
       return;
     }
-    onSuccess();
+    onSuccess(result.data);
   };
 
   return (
