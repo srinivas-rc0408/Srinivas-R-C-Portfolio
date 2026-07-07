@@ -2,7 +2,7 @@ export const dynamic = 'force-dynamic';
 
 import { NextRequest, NextResponse } from "next/server";
 import { isAdminRequest } from "@/lib/auth";
-import { createPresignedUpload, isValidUploadKind, isAllowedContentType, MAX_UPLOAD_BYTES } from "@/lib/r2";
+import { createPresignedUpload, isValidUploadKind, isAllowedContentType, isR2Configured, MAX_UPLOAD_BYTES } from "@/lib/r2";
 
 /* ═══════════════════════════════════════════════════════════════
    POST /api/upload/presign
@@ -14,6 +14,10 @@ import { createPresignedUpload, isValidUploadKind, isAllowedContentType, MAX_UPL
 export async function POST(request: NextRequest) {
   if (!(await isAdminRequest(request))) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  if (!isR2Configured()) {
+    return NextResponse.json({ error: "File storage not configured yet" }, { status: 503 });
   }
 
   try {
