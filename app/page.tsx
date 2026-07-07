@@ -57,17 +57,22 @@ export default function Home() {
   const [showCarousel, setShowCarousel] = useState(false);
   const [carouselStep, setCarouselStep] = useState(0);
   const [startOffset] = useState(() => Math.floor(Math.random() * CAROUSEL.length));
+  const [landed, setLanded] = useState(false);
+  /* Reduced motion renders the entry already settled — glow shows immediately. */
+  const showGlow = landed || !!reduceMotion;
 
   const activeAsset: SpideyAsset =
     !showCarousel || isMobile ? ENTRY : CAROUSEL[(startOffset + carouselStep) % CAROUSEL.length];
 
 
-  /* ── Start the carousel once the entry drop has settled ── */
+  /* ── Start the carousel once the entry drop has settled.
+     Reduced motion = render final state, no loops (DESIGN.md) —
+     the entry pose stays, the carousel never starts. ── */
   useEffect(() => {
-    if (isMobile) return;
+    if (isMobile || reduceMotion) return;
     const startDelay = setTimeout(() => setShowCarousel(true), 6000);
     return () => clearTimeout(startDelay);
-  }, [isMobile]);
+  }, [isMobile, reduceMotion]);
 
   /* ── Carousel tick ── */
   useEffect(() => {
@@ -150,7 +155,9 @@ export default function Home() {
         {/* ═══════════════════════════════════════════════ */}
         {/* HERO SECTION                                   */}
         {/* ═══════════════════════════════════════════════ */}
-        <section className="relative min-h-screen w-full flex items-center bg-transparent">
+        {/* Hero is the stage's positioned ancestor — exactly 100svh so the
+            .spidey-stage bottom:35svh really lands his feet at 65svh. */}
+        <section className="relative h-svh w-full flex items-center bg-transparent">
 
           {/* ── MAIN GRID ── */}
           <div className="grid flex-1 grid-cols-2">
@@ -275,20 +282,27 @@ export default function Home() {
 
             {/* ═══════════════════════════════════════════ */}
             {/* RIGHT COLUMN — Spider-Man Stage             */}
-            {/* See SPIDERMAN-ASSETS-SPEC.md for every number below. */}
+            {/* See SPIDERMAN-ASSETS-SPEC.md for every number below.
+                No `relative` here: .spidey-stage must anchor to the
+                100svh section, not this column.              */}
             {/* ═══════════════════════════════════════════ */}
-            <div className="relative flex h-full w-full items-center justify-center">
+            <div className="flex h-full w-full items-center justify-center">
               <motion.div
                 className="spidey-stage"
                 data-anchor={activeAsset.anchor}
                 initial={reduceMotion ? false : "hidden"}
                 animate="visible"
                 variants={entryDrop}
+                onAnimationComplete={() => setLanded(true)}
               >
-                <AnimatePresence mode="popLayout">
+                {/* initial={false}: the entry pose gets ONLY the spring drop,
+                    never the crossfade blur-in on first paint. */}
+                <AnimatePresence mode="popLayout" initial={false}>
                   <motion.div
                     key={activeAsset.src}
-                    className="relative"
+                    className={`relative flex h-full max-w-full justify-center ${
+                      activeAsset.anchor === "top-web" ? "items-start" : "items-end"
+                    }`}
                     variants={crossfade}
                     initial="enter"
                     animate="center"
@@ -310,6 +324,20 @@ export default function Home() {
                     />
                   </motion.div>
                 </AnimatePresence>
+
+                {/* Soft landing glow — fades in once the drop settles.
+                    Opacity/transform only; the blur is static, not animated. */}
+                <motion.div
+                  aria-hidden
+                  className="absolute -bottom-7 left-1/2 h-10 w-3/5 -translate-x-1/2 rounded-full blur-2xl"
+                  style={{
+                    background:
+                      "radial-gradient(ellipse at center, rgba(220,38,38,0.45) 0%, rgba(220,38,38,0.12) 55%, transparent 80%)",
+                  }}
+                  initial={{ opacity: 0, scale: 0.7 }}
+                  animate={showGlow ? { opacity: 1, scale: 1 } : undefined}
+                  transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
+                />
               </motion.div>
             </div>
           </div>
@@ -332,11 +360,14 @@ export default function Home() {
               if (!reduceMotion) setHammockSwaying(true);
             }}
           >
+            {/* quality 100: the 800px source is upscaled to 100vw, so give the
+                optimizer maximum source fidelity — no double softening. */}
             <Image
               src={HAMMOCK.src}
               width={HAMMOCK.w}
               height={HAMMOCK.h}
               sizes="100vw"
+              quality={100}
               style={{ width: "100%", height: "auto" }}
               alt=""
             />

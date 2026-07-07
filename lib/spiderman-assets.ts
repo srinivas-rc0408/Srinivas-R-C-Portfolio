@@ -17,7 +17,7 @@ export const ENTRY: SpideyAsset = {
 
 export const CAROUSEL: SpideyAsset[] = [
   { src: "/spiderman/2.png",  w: 742,  h: 666,  anchor: "bottom",  style: "movie"   },
-  { src: "/spiderman/8.png",  w: 569,  h: 853,  anchor: "top-web", style: "movie",  webX: 0.425 },
+  { src: "/spiderman/8.png",  w: 569,  h: 855,  anchor: "top-web", style: "movie",  webX: 0.425 },
   { src: "/spiderman/9.png",  w: 341,  h: 1030, anchor: "bottom",  style: "movie"   },
   { src: "/spiderman/10.png", w: 836,  h: 426,  anchor: "bottom",  style: "movie"   },
   { src: "/spiderman/14.png", w: 365,  h: 411,  anchor: "bottom",  style: "movie"   },

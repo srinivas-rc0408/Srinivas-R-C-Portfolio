@@ -25,11 +25,13 @@ export const crossfade: Variants = {
    Preload the NEXT image 1.5s before each swap: new Image().src = next. */
 
 /* ---- HAMMOCK SCROLL REVEAL (11.png) ----------------------------- */
+/* The blur sharpen-in participates in the crossfade blur exception —
+   ONLY during the reveal moment, never in the idle sway.             */
 export const hammockReveal: Variants = {
-  hidden:  { opacity: 0, y: 64, scaleY: 0.92 },
+  hidden:  { opacity: 0, y: 64, scaleY: 0.92, filter: "blur(6px)" },
   visible: {
-    opacity: 1, y: 0, scaleY: 1,
-    transition: { type: "spring", stiffness: 60, damping: 13 },
+    opacity: 1, y: 0, scaleY: 1, filter: "blur(0px)",
+    transition: { type: "spring", stiffness: 60, damping: 13, filter: { duration: 0.6, ease: [0.22, 1, 0.36, 1] } },
   },
 };
 
