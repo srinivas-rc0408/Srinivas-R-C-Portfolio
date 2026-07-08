@@ -83,7 +83,7 @@ export default function DetailsPage() {
                 But if we needed a specific trigger here, we'd add it. 
                 For now, the global navbar sits on top, but assuming this header overrides or complements it. */}
             <div className="flex flex-col">
-              <h1 className="text-xl font-black uppercase tracking-widest text-white">Srinivas R.C</h1>
+              <h1 className="text-xl font-black uppercase tracking-widest text-white">Srinivas R C</h1>
               <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest text-red-500">
                 <MapPin size={10} /> Bengaluru, Karnataka
               </div>

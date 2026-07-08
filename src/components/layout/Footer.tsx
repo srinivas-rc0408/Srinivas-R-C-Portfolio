@@ -2,9 +2,10 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { Mail, Gamepad2, Loader2 } from "lucide-react";
 import { FaInstagram, FaLinkedin, FaGithub } from "react-icons/fa";
-import { motion } from "framer-motion";
+import { motion, useReducedMotion } from "framer-motion";
 import useSWR from "swr";
 import FeedbackModal from "@/src/components/modals/FeedbackModal";
 import { formatDateWithDay } from "@/lib/formatDate";
@@ -28,6 +29,7 @@ const EXPLORE_LINKS = [
 
 export default function Footer() {
   const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
+  const reduceMotion = useReducedMotion();
   const { data: socials, isLoading } = useSWR<Record<string, string>>("/api/socials", fetcher, {
     fallbackData: {
       Instagram: "https://instagram.com",
@@ -62,13 +64,30 @@ export default function Footer() {
         }}
       />
 
+      {/* Chibi Spidey keeping watch on the right (owner-provided asset) */}
+      <motion.div
+        aria-hidden
+        className="pointer-events-none absolute bottom-16 right-3 hidden w-[90px] sm:block md:right-8 md:w-[120px]"
+        animate={reduceMotion ? undefined : { y: [0, -7, 0] }}
+        transition={{ duration: 3.4, repeat: Infinity, ease: "easeInOut" }}
+      >
+        <Image
+          src="/spiderman/footer-spidey.png"
+          width={435}
+          height={570}
+          sizes="120px"
+          alt=""
+          style={{ width: "100%", height: "auto" }}
+        />
+      </motion.div>
+
       <div className="relative mx-auto w-full max-w-6xl px-6 pb-8 pt-14 md:px-10">
         {/* ── Top: three columns ── */}
         <div className="grid grid-cols-1 gap-12 text-center md:grid-cols-3 md:gap-8 md:text-left">
           {/* Brand */}
           <div className="flex flex-col items-center gap-3 md:items-start">
-            <span className="text-lg font-black uppercase tracking-[0.25em] text-white">
-              Srinivas R.C
+            <span className="whitespace-nowrap text-lg font-black uppercase tracking-[0.25em] text-white">
+              Srinivas R C
             </span>
             <p className="max-w-xs text-sm leading-relaxed text-zinc-500">
               AI/ML Engineer &amp; Full-Stack Developer
@@ -155,10 +174,10 @@ export default function Footer() {
           </div>
         </div>
 
-        {/* ── Oversized wordmark ── */}
+        {/* ── Oversized wordmark — full name, always one line ── */}
         <div aria-hidden className="pointer-events-none mt-10 hidden select-none overflow-hidden md:block">
-          <p className="whitespace-nowrap text-center text-[9rem] font-black uppercase leading-[0.8] tracking-[0.08em] text-white/[0.03] lg:text-[11rem]">
-            Srinivas
+          <p className="whitespace-nowrap text-center text-[clamp(3rem,9vw,8.5rem)] font-black uppercase leading-[0.8] tracking-[0.06em] text-white/[0.03]">
+            Srinivas R C
           </p>
         </div>
 

@@ -141,6 +141,18 @@ export default function Home() {
   /* Reduced motion renders the entry already settled — glow shows immediately. */
   const showGlow = landed || !!reduceMotion;
 
+  /* ── "Hi, there" thought cloud: pops in once Spidey settles, then fades ── */
+  const [hiThere, setHiThere] = useState(false);
+  useEffect(() => {
+    if (!showGlow) return;
+    const show = setTimeout(() => setHiThere(true), 350);
+    const hide = setTimeout(() => setHiThere(false), 5600);
+    return () => {
+      clearTimeout(show);
+      clearTimeout(hide);
+    };
+  }, [showGlow]);
+
   const activeAsset: SpideyAsset =
     !showCarousel || isMobile ? ENTRY : CAROUSEL[(startOffset + carouselStep) % CAROUSEL.length];
 
@@ -293,17 +305,16 @@ export default function Home() {
               animate="visible"
             >
               {/* Name — Dominant anchor (DESIGN.md order: name, then location) */}
+              {/* One line at every resolution — clamp scales with viewport */}
               <motion.h1
                 id="hero-name"
                 variants={itemVariants}
-                className="text-[3.4rem] font-black leading-[0.95] tracking-tighter text-white md:text-8xl md:leading-none xl:text-9xl"
+                className="whitespace-nowrap text-[clamp(2rem,7.2vw,7rem)] font-black leading-none tracking-tighter text-white"
                 style={{
                   fontFamily: "var(--font-geist-sans), system-ui, sans-serif",
                 }}
               >
-                SRINIVAS.
-                <br />
-                <span className="text-white/90">R. C</span>
+                SRINIVAS <span className="text-white/90">R C</span>
               </motion.h1>
 
               {/* Location */}
@@ -453,6 +464,34 @@ export default function Home() {
                   </motion.div>
                 </AnimatePresence>
 
+                {/* "Hi, there" thought cloud — white bubble + trailing dots,
+                    pops in after Spidey settles, drifts out on its own. */}
+                <AnimatePresence>
+                  {hiThere && (
+                    <motion.div
+                      aria-hidden
+                      className="absolute -top-2 left-0 z-20 -translate-x-1/3 md:-left-10 md:top-4 md:translate-x-0"
+                      style={{ transformOrigin: "bottom right" }}
+                      initial={reduceMotion ? { opacity: 0 } : { opacity: 0, scale: 0.5, y: 10 }}
+                      animate={{ opacity: 1, scale: 1, y: 0 }}
+                      exit={{ opacity: 0, scale: 0.85, y: -6 }}
+                      transition={{ type: "spring", stiffness: 280, damping: 18 }}
+                    >
+                      <div className="relative rounded-2xl bg-white px-4 py-2 shadow-[0_10px_35px_rgba(0,0,0,0.45)]">
+                        <span
+                          className="whitespace-nowrap text-sm font-bold text-zinc-900"
+                          style={{ fontFamily: "'Comic Sans MS', 'Segoe UI', sans-serif" }}
+                        >
+                          Hi, there!
+                        </span>
+                        {/* thought-cloud trail toward Spidey */}
+                        <div className="absolute -bottom-2.5 right-2 h-2.5 w-2.5 rounded-full bg-white" />
+                        <div className="absolute -bottom-5 right-0 h-1.5 w-1.5 rounded-full bg-white" />
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+
                 {/* Soft landing glow — fades in once the drop settles.
                     Opacity/transform only; the blur is static, not animated. */}
                 {/* hidden on mobile: the short entry image hangs from the stage
@@ -529,7 +568,7 @@ export default function Home() {
           {/* ── Sticky mini-header ── */}
           <div className="sticky top-[72px] z-30 mb-12 flex w-full items-center justify-between border-b border-white/5 bg-black/60 px-6 py-4 backdrop-blur-xl md:px-12">
             <div className="flex items-center gap-3 text-xs font-bold uppercase tracking-widest text-zinc-300">
-              <span>SRINIVAS R.C</span>
+              <span>SRINIVAS R C</span>
               <span className="text-zinc-600">·</span>
               <span className="text-zinc-500">Bengaluru</span>
             </div>

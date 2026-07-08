@@ -108,7 +108,7 @@ export default function DocumentModal({ isOpen, onClose, type, gated = true }: D
             {/* ── Header ── */}
             <div className="flex shrink-0 items-center justify-between border-b border-white/5 bg-black/50 px-6 py-4">
               <h2 className="text-sm font-bold uppercase tracking-[0.2em] text-white">
-                <span className="text-zinc-500">SRINIVAS R.C&apos;s</span> {title}
+                <span className="text-zinc-500">SRINIVAS R C&apos;s</span> {title}
               </h2>
               <motion.button
                 whileTap={{ scale: 0.95 }}

@@ -130,16 +130,20 @@ export default function ProjectsPage() {
                           <div className="flex items-center justify-center h-10 w-10 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400">
                             <Code2 size={20} />
                           </div>
-                          <a
-                            href={project.githubUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            onClick={(e) => e.stopPropagation()}
+                          {/* button, not <a>: the whole card is already an anchor,
+                              and <a> cannot nest inside <a> */}
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              window.open(project.githubUrl, "_blank", "noopener,noreferrer");
+                            }}
                             aria-label={`${project.title} on GitHub`}
-                            className="text-zinc-500 hover:text-white transition-colors"
+                            className="cursor-pointer text-zinc-500 hover:text-white transition-colors"
                           >
                             <ExternalLink size={20} />
-                          </a>
+                          </button>
                         </div>
 
                         <h2 className="text-xl font-bold text-white tracking-wide mt-2">{project.title}</h2>
