@@ -1,7 +1,6 @@
 "use client";
 
 import { usePathname } from "next/navigation";
-import { motion, useScroll, useTransform } from "framer-motion";
 import Navbar from "./Navbar";
 import SideMenu from "./SideMenu";
 import Footer from "./Footer";
@@ -16,9 +15,6 @@ import { useScrollStore } from "@/src/contexts/ScrollStore";
 export default function MainLayout({ children }: { children: React.ReactNode }) {
   const { isMenuOpen, openMenu, closeMenu } = useScrollStore();
   const pathname = usePathname();
-
-  const { scrollY } = useScroll();
-  const backgroundOpacity = useTransform(scrollY, [100, 500], [0, 1]);
 
   // The Admin_OS and the full-screen game are separate application shells.
   // We do not render the public Navbar, SideMenu, or Footer over them —
@@ -39,13 +35,11 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
   return (
     <div className="flex flex-col min-h-screen relative text-white bg-transparent overflow-x-hidden">
       
-      {/* ── Global Background Image (Fades in on scroll) ── */}
-      <motion.div 
-        style={{ opacity: backgroundOpacity, backgroundImage: "url('/spiderman/11.png')" }}
-        className="fixed inset-0 -z-10 bg-cover bg-center bg-no-repeat pointer-events-none" 
-      />
-      
-      {/* ── Darkening Overlay ── */}
+      {/* ── Background: dark gradient only. The old fixed 11.png bg-cover
+          layer that faded in on scroll is gone — it stretched the hammock
+          over the whole viewport behind the page, reading as a second
+          overlapped page (and DESIGN.md forbids the hammock as a
+          background image). ── */}
       <div className="fixed inset-0 -z-10 bg-gradient-to-b from-[#050508] via-black/40 to-black/80 pointer-events-none" />
 
       {/* ── Top Navigation ── */}
