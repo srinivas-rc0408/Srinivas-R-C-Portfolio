@@ -109,6 +109,17 @@ model GameSession {
   @@index([userId])
 }
 
+model GameScore {
+  id        String   @id @default(uuid())
+  game      String // "dash" | "drive"
+  name      String
+  score     Int
+  userId    String?
+  createdAt DateTime @default(now())
+
+  @@index([game, score])
+}
+
 model Feedback {
   id        String   @id @default(uuid())
   email     String

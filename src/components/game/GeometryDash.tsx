@@ -15,6 +15,7 @@ import {
   GraduationCap,
   Crown,
 } from "lucide-react";
+import Leaderboard from "@/src/components/game/Leaderboard";
 
 /* ═══════════════════════════════════════════════════════════════
    SPIDEY DASH — Geometry-Dash-style one-touch runner.
@@ -533,6 +534,8 @@ export default function GeometryDash({ onExit }: GeometryDashProps) {
                 (a) => a.m <= death.score && !prevUnlockedRef.current.includes(a.id)
               ).map((a) => a.id)}
             />
+
+            <Leaderboard game="dash" score={death.score} />
 
             <div className="flex w-full max-w-xs flex-col gap-3">
               <motion.button

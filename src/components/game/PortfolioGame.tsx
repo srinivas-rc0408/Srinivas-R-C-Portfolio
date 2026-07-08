@@ -6,6 +6,7 @@ import { Loader2, ArrowRight, Eye, X, Bike, Car, Bus, Gauge, Flag, Clock } from 
 import { useRouter } from "next/navigation";
 import Phaser from "phaser";
 import nipplejs from "nipplejs";
+import Leaderboard from "@/src/components/game/Leaderboard";
 
 /* ═══════════════════════════════════════════════════════════════
    PORTFOLIO GAME (PHASER 4 + REACT BRIDGE)
@@ -593,6 +594,10 @@ export default function PortfolioGame() {
                   <span className="text-lg font-bold text-white">{tripSummary.duration}s</span>
                   <span className="text-[9px] uppercase tracking-widest text-zinc-500">Time</span>
                 </div>
+              </div>
+
+              <div className="mb-6 flex w-full justify-center">
+                <Leaderboard game="drive" score={tripSummary.distance} />
               </div>
 
               <div className="flex w-full flex-col gap-3">
