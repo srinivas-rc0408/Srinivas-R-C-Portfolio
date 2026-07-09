@@ -52,3 +52,13 @@ test("topScores rejects an unknown game", async () => {
   const result = await topScores("chess");
   assert.equal(result.ok, false);
 });
+
+test("rush (lane runner) is a valid leaderboard game", async () => {
+  const submit = await submitScore({ game: "rush", name: `${MARKER}-r1`, score: 77 });
+  assert.equal(submit.ok, true);
+  const top = await topScores("rush");
+  assert.equal(top.ok, true);
+  if (top.ok) {
+    assert.ok(top.scores.some((s) => s.name === `${MARKER}-r1` && s.score === 77));
+  }
+});

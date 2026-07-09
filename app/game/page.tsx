@@ -4,7 +4,7 @@ import { useState } from "react";
 import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import { Car, Zap, X } from "lucide-react";
+import { Car, Zap, X, TrainFront } from "lucide-react";
 
 // Dynamically import the Phaser games to prevent SSR execution —
 // Phaser relies on the Canvas API which is only available in the browser
@@ -14,6 +14,9 @@ const PortfolioGame = dynamic(() => import("@/src/components/game/PortfolioGame"
 const GeometryDash = dynamic(() => import("@/src/components/game/GeometryDash"), {
   ssr: false,
 });
+const WebRush = dynamic(() => import("@/src/components/game/WebRush"), {
+  ssr: false,
+});
 
 /* ═══════════════════════════════════════════════════════════════
    GAME ROUTE (/game) — Interactive Mode
@@ -21,7 +24,7 @@ const GeometryDash = dynamic(() => import("@/src/components/game/GeometryDash"),
    (one-touch runner). Each game hosts its own Phaser canvas.
    ═══════════════════════════════════════════════════════════════ */
 
-type Mode = "drive" | "dash" | null;
+type Mode = "drive" | "dash" | "rush" | null;
 
 const GAMES: { mode: Exclude<Mode, null>; icon: typeof Car; title: string; blurb: string }[] = [
   {
@@ -36,6 +39,12 @@ const GAMES: { mode: Exclude<Mode, null>; icon: typeof Car; title: string; blurb
     title: "Spidey Dash",
     blurb: "One-touch runner. Jump the spikes — how far can you go?",
   },
+  {
+    mode: "rush",
+    icon: TrainFront,
+    title: "Web Rush",
+    blurb: "3-lane subway runner. Swipe, jump, dodge the trains.",
+  },
 ];
 
 export default function GamePage() {
@@ -46,6 +55,7 @@ export default function GamePage() {
     <main className="fixed inset-0 z-[100] bg-black">
       {mode === "drive" && <PortfolioGame />}
       {mode === "dash" && <GeometryDash onExit={() => setMode(null)} />}
+      {mode === "rush" && <WebRush onExit={() => setMode(null)} />}
 
       {mode === null && (
         <div className="flex h-screen w-screen flex-col items-center justify-center gap-10 bg-[#050508] px-6 text-center">

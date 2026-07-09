@@ -12,7 +12,7 @@ import { useAuth } from "@/src/hooks/useAuth";
    ═══════════════════════════════════════════════════════════════ */
 
 interface LeaderboardProps {
-  game: "dash" | "drive";
+  game: "dash" | "drive" | "rush";
   score: number;
   unit?: string;
 }

@@ -14,7 +14,7 @@ import { getUserSessionCookie, verifyToken } from "@/lib/auth";
    without a live Next.js request scope.
    ═══════════════════════════════════════════════════════════════ */
 
-const GAMES = ["dash", "drive"] as const;
+const GAMES = ["dash", "drive", "rush"] as const;
 
 const submitSchema = z.object({
   game: z.enum(GAMES),
