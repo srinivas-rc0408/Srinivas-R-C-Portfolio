@@ -167,12 +167,13 @@ export default function PortfolioGame() {
         g.generateTexture("vehicle", w, h);
         g.clear();
 
-        // Building texture
+        // Building texture — 200px in a 400px cell leaves 200px-wide roads,
+        // enough room to line up drifts between blocks
         g.fillStyle(0x18181b, 1);
-        g.fillRoundedRect(0, 0, 260, 260, 8);
+        g.fillRoundedRect(0, 0, 200, 200, 8);
         g.lineStyle(2, 0x3f3f46, 1);
-        g.strokeRoundedRect(1, 1, 258, 258, 8);
-        g.generateTexture("building", 260, 260);
+        g.strokeRoundedRect(1, 1, 198, 198, 8);
+        g.generateTexture("building", 200, 200);
         g.clear();
 
         // Bus stop pad — unvisited (glowing red/white) and visited (dim emerald)
@@ -190,10 +191,10 @@ export default function PortfolioGame() {
         g.generateTexture("stop_visited", 40, 40);
         g.clear();
 
-        // Tire smoke puff for drifting
-        g.fillStyle(0x9ca3af, 1);
-        g.fillCircle(3, 3, 3);
-        g.generateTexture("smoke", 6, 6);
+        // Tire smoke puff for drifting — white, reads clearly on dark asphalt
+        g.fillStyle(0xffffff, 1);
+        g.fillCircle(4, 4, 4);
+        g.generateTexture("smoke", 8, 8);
         g.clear();
 
         g.destroy();
@@ -241,12 +242,13 @@ export default function PortfolioGame() {
         this.player.setCollideWorldBounds(true);
         this.cameras.main.startFollow(this.player, true, 0.1, 0.1);
 
-        // Tire smoke while drifting
+        // White tire smoke while drifting — dense enough to read as a trail
         this.skid = this.add.particles(0, 0, "smoke", {
-          frequency: 22,
-          lifespan: 480,
-          alpha: { start: 0.32, end: 0 },
-          scale: { start: 1.2, end: 2.6 },
+          frequency: 14,
+          lifespan: 620,
+          alpha: { start: 0.55, end: 0 },
+          scale: { start: 1.4, end: 3.4 },
+          speed: { min: 4, max: 22 },
           follow: this.player,
           emitting: false,
         });
