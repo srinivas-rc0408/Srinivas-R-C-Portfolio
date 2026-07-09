@@ -18,8 +18,10 @@ import {
 import Link from "next/link";
 import CaseOpening from "@/src/components/CaseOpening";
 import DocumentModal from "@/src/components/modals/DocumentModal";
-import { ENTRY, CAROUSEL, HAMMOCK, CAROUSEL_INTERVAL_MS, type SpideyAsset } from "@/lib/spiderman-assets";
-import { entryDrop, crossfade, hammockReveal, hammockSway } from "@/lib/spiderman-motion";
+import { HAMMOCK } from "@/lib/spiderman-assets";
+import { hammockReveal, hammockSway } from "@/lib/spiderman-motion";
+import HeroShowcase, { useHeroRotation } from "@/src/components/HeroShowcase";
+import { HEROES } from "@/lib/hero-showcase";
 import { useScrollStore } from "@/src/contexts/ScrollStore";
 
 /* ── Mobile breakpoint — carousel disabled entirely below 768px ── */
@@ -81,7 +83,7 @@ export default function Home() {
     const entryLoaded = new Promise<void>((resolve) => {
       img.onload = () => resolve();
       img.onerror = () => resolve();
-      img.src = ENTRY.src;
+      img.src = HEROES[0].character; // Spider-Man opens the showcase
     });
     const fontsReady: Promise<unknown> = document.fonts?.ready ?? Promise.resolve();
     const cap = new Promise<void>((resolve) => setTimeout(resolve, 4000));
@@ -117,9 +119,7 @@ export default function Home() {
     const idle = window.requestIdleCallback ?? ((cb: () => void) => window.setTimeout(cb, 300));
     const cancelIdle = window.cancelIdleCallback ?? window.clearTimeout;
     const id = idle(() => {
-      CAROUSEL.forEach((a) => {
-        new window.Image().src = a.src;
-      });
+      // showcase preloads its own 8 hero images; just warm the routes here
       router.prefetch("/projects");
       router.prefetch("/details");
     });
@@ -127,63 +127,28 @@ export default function Home() {
   }, [loaderState, router]);
 
   /*
-   * SPIDER-MAN HERO STATE — see SPIDERMAN-ASSETS-SPEC.md
-   * 1.png is the locked entry pose (drops once on load). After it settles,
-   * the carousel takes over, cycling CAROUSEL forever — no forced reset.
-   * The starting index is shuffled once per mount so repeat visits vary,
-   * but the style-grouped sequence itself never reorders.
+   * HERO SHOWCASE STATE — see lib/hero-showcase.ts
+   * Four characters rotate on the right edge (10s each). Mobile and
+   * reduced motion collapse to a static Spider-Man with the default
+   * theme. The active hero's accent tints the location dot, the
+   * Ask-AI border glow, and the primary button's hover glow.
    */
   const isMobile = useSyncExternalStore(subscribeIsMobile, getIsMobileSnapshot, getIsMobileServerSnapshot);
-  const [showCarousel, setShowCarousel] = useState(false);
-  const [carouselStep, setCarouselStep] = useState(0);
-  const [startOffset] = useState(() => Math.floor(Math.random() * CAROUSEL.length));
-  const [landed, setLanded] = useState(false);
-  /* Reduced motion renders the entry already settled — glow shows immediately. */
-  const showGlow = landed || !!reduceMotion;
+  const showcaseStatic = isMobile || !!reduceMotion;
+  const activeHero = useHeroRotation(heroLive && !showcaseStatic);
+  const accent = showcaseStatic ? HEROES[0].theme.accent : activeHero.theme.accent;
 
-  /* ── "Hi, there" thought cloud: pops in once Spidey settles, then fades ── */
+  /* ── "Hi, there" thought cloud: pops in once Spidey's entrance settles ── */
   const [hiThere, setHiThere] = useState(false);
   useEffect(() => {
-    if (!showGlow) return;
-    const show = setTimeout(() => setHiThere(true), 350);
-    const hide = setTimeout(() => setHiThere(false), 5600);
+    if (!heroLive) return;
+    const show = setTimeout(() => setHiThere(true), 1200);
+    const hide = setTimeout(() => setHiThere(false), 6400);
     return () => {
       clearTimeout(show);
       clearTimeout(hide);
     };
-  }, [showGlow]);
-
-  const activeAsset: SpideyAsset =
-    !showCarousel || isMobile ? ENTRY : CAROUSEL[(startOffset + carouselStep) % CAROUSEL.length];
-
-
-  /* ── Start the carousel once the entry drop has settled.
-     Reduced motion = render final state, no loops (DESIGN.md) —
-     the entry pose stays, the carousel never starts. ── */
-  useEffect(() => {
-    if (isMobile || reduceMotion || !heroLive) return;
-    const startDelay = setTimeout(() => setShowCarousel(true), 6000);
-    return () => clearTimeout(startDelay);
-  }, [isMobile, reduceMotion, heroLive]);
-
-  /* ── Carousel tick ── */
-  useEffect(() => {
-    if (!showCarousel || isMobile) return;
-    const interval = setInterval(() => {
-      setCarouselStep((s) => s + 1);
-    }, CAROUSEL_INTERVAL_MS);
-    return () => clearInterval(interval);
-  }, [showCarousel, isMobile]);
-
-  /* ── Preload the next carousel image 1.5s before each swap ── */
-  useEffect(() => {
-    if (!showCarousel || isMobile) return;
-    const next = CAROUSEL[(startOffset + carouselStep + 1) % CAROUSEL.length];
-    const timer = setTimeout(() => {
-      new window.Image().src = next.src;
-    }, CAROUSEL_INTERVAL_MS - 1500);
-    return () => clearTimeout(timer);
-  }, [showCarousel, isMobile, carouselStep, startOffset]);
+  }, [heroLive]);
 
   /* ── Hammock: reveal once on scroll, then sway forever (unless reduced motion) ── */
   const [hammockSwaying, setHammockSwaying] = useState(false);
@@ -293,8 +258,11 @@ export default function Home() {
             .spidey-stage bottom:35svh really lands his feet at 65svh. */}
         <section className="relative h-svh w-full flex items-center bg-transparent">
 
-          {/* ── MAIN GRID — single column below 768px, hero stacks ── */}
-          <div className="grid flex-1 grid-cols-1 md:grid-cols-2">
+          {/* ── MAIN GRID — single column below 768px, hero stacks ──
+              relative z-10: must paint above the showcase's absolutely
+              positioned bg-wash layer (z-0), or the left column text
+              vanishes underneath the gradient. ── */}
+          <div className="relative z-10 grid flex-1 grid-cols-1 md:grid-cols-2">
             {/* ─── LEFT COLUMN — Premium Content ─── */}
             {/* Mobile: content starts below the hanging entry Spider-Man
                 (his bottom lands ≈36svh), so nothing runs under him. */}
@@ -317,16 +285,24 @@ export default function Home() {
                 SRINIVAS <span className="text-white/90">R C</span>
               </motion.h1>
 
-              {/* Location */}
+              {/* Location — dot + text tint follow the active hero's accent */}
               <motion.p
                 id="hero-location"
                 variants={itemVariants}
-                className="flex items-center gap-2.5 text-xs font-semibold uppercase text-red-500"
-                style={{ letterSpacing: "0.2em" }}
+                className="flex items-center gap-2.5 text-xs font-semibold uppercase"
+                style={{
+                  letterSpacing: "0.2em",
+                  color: accent,
+                  transition: "color 0.6s ease",
+                }}
               >
                 <span
-                  className="inline-block h-2 w-2 rounded-full bg-red-500"
-                  style={{ boxShadow: "0 0 10px rgba(220,38,38,0.7)" }}
+                  className="inline-block h-2 w-2 rounded-full"
+                  style={{
+                    background: accent,
+                    boxShadow: `0 0 10px ${accent}b3`,
+                    transition: "background 0.6s ease, box-shadow 0.6s ease",
+                  }}
                 />
                 Location: Bengaluru, Karnataka
               </motion.p>
@@ -356,11 +332,11 @@ export default function Home() {
                   whileTap={{ scale: 0.95 }}
                   className="group relative flex cursor-pointer items-center gap-2.5 overflow-hidden rounded-xl border border-red-500/40 bg-red-600/15 px-6 py-3.5 text-sm font-semibold text-white backdrop-blur-xl transition-colors duration-300 hover:border-red-500/70 hover:bg-red-600/25 md:px-10 md:py-4"
                 >
-                  {/* glow layer — opacity-only, never animated box-shadow */}
+                  {/* glow layer — opacity-only reveal, tinted by the active hero */}
                   <span
                     aria-hidden
                     className="pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-300 group-hover:opacity-100"
-                    style={{ boxShadow: "0 0 24px rgba(220,38,38,0.45), inset 0 0 12px rgba(220,38,38,0.15)" }}
+                    style={{ boxShadow: `0 0 24px ${accent}73, inset 0 0 12px ${accent}26` }}
                   />
                   <FileText size={16} strokeWidth={1.5} className="relative z-10 text-red-400" />
                   <span className="relative z-10">View Resume</span>
@@ -389,13 +365,15 @@ export default function Home() {
                 <motion.button
                   id="btn-ai"
                   onClick={() => setAiTeased(true)}
-                  whileHover={{ scale: 1.02, boxShadow: "0 0 25px rgba(220,38,38,0.5)" }}
+                  whileHover={{ scale: 1.02, boxShadow: `0 0 25px ${accent}80` }}
                   whileTap={{ scale: 0.95 }}
-                  className="glow-pulse relative flex w-full cursor-pointer flex-col items-start gap-1 overflow-hidden border border-red-500/30 px-8 py-5 transition-all duration-300"
+                  className="glow-pulse relative flex w-full cursor-pointer flex-col items-start gap-1 overflow-hidden border px-8 py-5 transition-all duration-300"
                   style={{
+                    borderColor: `${accent}4d`,
                     background:
                       "linear-gradient(135deg, rgba(220,38,38,0.1) 0%, rgba(127,29,29,0.15) 50%, rgba(220,38,38,0.08) 100%)",
-                    boxShadow: "0 0 10px rgba(220,38,38,0.3)",
+                    boxShadow: `0 0 10px ${accent}4d`,
+                    transition: "border-color 0.6s ease, box-shadow 0.6s ease",
                   }}
                 >
                   {/* Shimmer overlay */}
@@ -420,96 +398,42 @@ export default function Home() {
             </motion.div>
 
             {/* ═══════════════════════════════════════════ */}
-            {/* RIGHT COLUMN — Spider-Man Stage             */}
-            {/* See SPIDERMAN-ASSETS-SPEC.md for every number below.
-                No `relative` here: .spidey-stage must anchor to the
-                100svh section, not this column.              */}
+            {/* RIGHT COLUMN — reserved for the showcase    */}
+            {/* The showcase itself anchors to the 100svh    */}
+            {/* section (extreme right), not this column.    */}
             {/* ═══════════════════════════════════════════ */}
-            <div className="flex h-full w-full items-center justify-center">
-              <motion.div
-                className="spidey-stage"
-                data-anchor={activeAsset.anchor}
-                initial={reduceMotion ? false : "hidden"}
-                animate={reduceMotion || heroLive ? "visible" : "hidden"}
-                variants={entryDrop}
-                onAnimationComplete={(def) => def === "visible" && setLanded(true)}
-              >
-                {/* initial={false}: the entry pose gets ONLY the spring drop,
-                    never the crossfade blur-in on first paint. */}
-                <AnimatePresence mode="popLayout" initial={false}>
-                  <motion.div
-                    key={activeAsset.src}
-                    className={`relative flex h-full max-w-full justify-center ${
-                      activeAsset.anchor === "top-web" ? "items-start" : "items-end"
-                    }`}
-                    variants={crossfade}
-                    initial="enter"
-                    animate="center"
-                    exit="exit"
-                    transition={reduceMotion ? { duration: 0 } : undefined}
-                  >
-                    {activeAsset.anchor === "top-web" && (
-                      <div
-                        className="web-line"
-                        style={{ "--web-x": activeAsset.webX } as React.CSSProperties}
-                      />
-                    )}
-                    <Image
-                      src={activeAsset.src}
-                      alt="Spider-Man"
-                      width={activeAsset.w}
-                      height={activeAsset.h}
-                      priority={activeAsset.src === ENTRY.src}
-                    />
-                  </motion.div>
-                </AnimatePresence>
-
-                {/* "Hi, there" thought cloud — white bubble + trailing dots,
-                    pops in after Spidey settles, drifts out on its own. */}
-                <AnimatePresence>
-                  {hiThere && (
-                    <motion.div
-                      aria-hidden
-                      className="absolute -top-2 left-0 z-20 -translate-x-1/3 md:-left-10 md:top-4 md:translate-x-0"
-                      style={{ transformOrigin: "bottom right" }}
-                      initial={reduceMotion ? { opacity: 0 } : { opacity: 0, scale: 0.5, y: 10 }}
-                      animate={{ opacity: 1, scale: 1, y: 0 }}
-                      exit={{ opacity: 0, scale: 0.85, y: -6 }}
-                      transition={{ type: "spring", stiffness: 280, damping: 18 }}
-                    >
-                      <div className="relative rounded-2xl bg-white px-4 py-2 shadow-[0_10px_35px_rgba(0,0,0,0.45)]">
-                        <span
-                          className="whitespace-nowrap text-sm font-bold text-zinc-900"
-                          style={{ fontFamily: "'Comic Sans MS', 'Segoe UI', sans-serif" }}
-                        >
-                          Hi, there!
-                        </span>
-                        {/* thought-cloud trail toward Spidey */}
-                        <div className="absolute -bottom-2.5 right-2 h-2.5 w-2.5 rounded-full bg-white" />
-                        <div className="absolute -bottom-5 right-0 h-1.5 w-1.5 rounded-full bg-white" />
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-
-                {/* Soft landing glow — fades in once the drop settles.
-                    Opacity/transform only; the blur is static, not animated. */}
-                {/* hidden on mobile: the short entry image hangs from the stage
-                    top there, so a stage-bottom glow would float detached */}
-                <motion.div
-                  aria-hidden
-                  className="absolute -bottom-7 left-1/2 hidden h-10 w-3/5 -translate-x-1/2 rounded-full blur-2xl md:block"
-                  style={{
-                    background:
-                      "radial-gradient(ellipse at center, rgba(220,38,38,0.45) 0%, rgba(220,38,38,0.12) 55%, transparent 80%)",
-                  }}
-                  initial={{ opacity: 0, scale: 0.7 }}
-                  animate={showGlow ? { opacity: 1, scale: 1 } : undefined}
-                  transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
-                />
-              </motion.div>
-            </div>
+            <div aria-hidden className="hidden md:block" />
           </div>
+
+          {/* ── HERO SHOWCASE — bg wash + logo watermark + character ── */}
+          <HeroShowcase hero={activeHero} isStatic={showcaseStatic} live={heroLive} />
+
+          {/* "Hi, there" thought cloud — greets once, left of Spidey's head */}
+          <AnimatePresence>
+            {hiThere && (
+              <motion.div
+                aria-hidden
+                className="absolute right-[34vw] top-[40svh] z-20 md:right-[17vw] md:top-[20svh]"
+                style={{ transformOrigin: "bottom right" }}
+                initial={reduceMotion ? { opacity: 0 } : { opacity: 0, scale: 0.5, y: 10 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.85, y: -6 }}
+                transition={{ type: "spring", stiffness: 280, damping: 18 }}
+              >
+                <div className="relative rounded-2xl bg-white px-4 py-2 shadow-[0_10px_35px_rgba(0,0,0,0.45)]">
+                  <span
+                    className="whitespace-nowrap text-sm font-bold text-zinc-900"
+                    style={{ fontFamily: "'Comic Sans MS', 'Segoe UI', sans-serif" }}
+                  >
+                    Hi, there!
+                  </span>
+                  {/* thought-cloud trail toward Spidey */}
+                  <div className="absolute -bottom-2.5 right-2 h-2.5 w-2.5 rounded-full bg-white" />
+                  <div className="absolute -bottom-5 right-0 h-1.5 w-1.5 rounded-full bg-white" />
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </section>
 
         {/* ═══════════════════════════════════════════════ */}

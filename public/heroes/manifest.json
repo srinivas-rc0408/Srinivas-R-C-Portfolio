@@ -1,0 +1,50 @@
+{
+  "spider_man.png": {
+    "w": 620,
+    "h": 1926,
+    "bleeds": [
+      "right",
+      "bottom"
+    ]
+  },
+  "superman.png": {
+    "w": 814,
+    "h": 689,
+    "bleeds": []
+  },
+  "batman.png": {
+    "w": 494,
+    "h": 1061,
+    "bleeds": [
+      "right",
+      "bottom"
+    ]
+  },
+  "ironman.png": {
+    "w": 797,
+    "h": 1104,
+    "bleeds": [
+      "bottom"
+    ]
+  },
+  "logo-spiderman.png": {
+    "w": 723,
+    "h": 1018,
+    "bleeds": []
+  },
+  "logo-superman.png": {
+    "w": 1344,
+    "h": 905,
+    "bleeds": []
+  },
+  "logo-batman.png": {
+    "w": 547,
+    "h": 333,
+    "bleeds": []
+  },
+  "logo-ironman.png": {
+    "w": 886,
+    "h": 1309,
+    "bleeds": []
+  }
+}
