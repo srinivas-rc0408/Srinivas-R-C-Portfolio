@@ -73,6 +73,29 @@ export default function Footer() {
           alt=""
           style={{ width: "100%", height: "auto" }}
         />
+
+        {/* "Hi, there!" thought cloud above Deadpool's head (he lounges with
+            his head at the left). Pops in ~1.2s after he scrolls into view. */}
+        <motion.div
+          className="absolute left-[3%] top-[-14%] md:left-[6%]"
+          style={{ transformOrigin: "bottom left" }}
+          initial={reduceMotion ? { opacity: 0 } : { opacity: 0, scale: 0.5, y: 10 }}
+          whileInView={{ opacity: 1, scale: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ delay: 1.2, type: "spring", stiffness: 280, damping: 18 }}
+        >
+          <div className="relative rounded-2xl bg-white px-3.5 py-1.5 shadow-[0_10px_35px_rgba(0,0,0,0.45)]">
+            <span
+              className="whitespace-nowrap text-[13px] font-bold text-zinc-900"
+              style={{ fontFamily: "'Comic Sans MS', 'Segoe UI', sans-serif" }}
+            >
+              Hi, there!
+            </span>
+            {/* thought trail pointing down toward Deadpool's head */}
+            <div className="absolute -bottom-2 left-3 h-2 w-2 rounded-full bg-white" />
+            <div className="absolute -bottom-4 left-1 h-1.5 w-1.5 rounded-full bg-white" />
+          </div>
+        </motion.div>
       </motion.div>
 
       {/* Subtle red glow rising from the bottom edge */}
@@ -92,28 +115,6 @@ export default function Footer() {
         animate={reduceMotion ? undefined : { y: [0, -7, 0] }}
         transition={{ duration: 3.4, repeat: Infinity, ease: "easeInOut" }}
       >
-        {/* "Hi, there!" thought cloud — pops in ~1.5s after the footer
-            scrolls into view, then stays. Rides the float with Spidey. */}
-        <motion.div
-          className="absolute -top-11 right-0 md:-top-12"
-          style={{ transformOrigin: "bottom right" }}
-          initial={reduceMotion ? { opacity: 0 } : { opacity: 0, scale: 0.5, y: 10 }}
-          whileInView={{ opacity: 1, scale: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ delay: 1.5, type: "spring", stiffness: 280, damping: 18 }}
-        >
-          <div className="relative rounded-2xl bg-white px-3.5 py-1.5 shadow-[0_10px_35px_rgba(0,0,0,0.45)]">
-            <span
-              className="whitespace-nowrap text-[13px] font-bold text-zinc-900"
-              style={{ fontFamily: "'Comic Sans MS', 'Segoe UI', sans-serif" }}
-            >
-              Hi, there!
-            </span>
-            {/* thought trail toward Spidey */}
-            <div className="absolute -bottom-2 right-1 h-2 w-2 rounded-full bg-white" />
-            <div className="absolute -bottom-4 right-[-6px] h-1.5 w-1.5 rounded-full bg-white" />
-          </div>
-        </motion.div>
         <Image
           src="/spiderman/footer-spidey.png"
           width={435}
