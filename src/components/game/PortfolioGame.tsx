@@ -150,6 +150,7 @@ export default function PortfolioGame() {
       lastY = 60;
       minimapCamera!: Phaser.Cameras.Scene2D.Camera;
       skid!: Phaser.GameObjects.Particles.ParticleEmitter;
+      obstacles!: Phaser.Physics.Arcade.StaticGroup;
 
       constructor() {
         super({ key: "MainScene" });
@@ -158,12 +159,42 @@ export default function PortfolioGame() {
       preload() {
         const g = this.add.graphics();
 
-        // Vehicle texture: colored body + white "nose" triangle marking front (rotation 0 = facing +x)
+        // Vehicle texture — detailed top-down sprite (rotation 0 = facing +x).
+        // Length runs along x (w), width along y (h): wheels, body, tinted
+        // cabin/windows, windshield and headlights per vehicle type.
         const [w, h] = stats.size;
+        const r = Math.min(6, h / 3);
+        const ww = Math.max(4, w * 0.14);
+        // wheels — dark marks at the four corners, on the top/bottom edges
+        g.fillStyle(0x0a0a0a, 1);
+        [w * 0.14, w * 0.64].forEach((wx) => {
+          g.fillRect(wx, 0, ww, 2);
+          g.fillRect(wx, h - 2, ww, 2);
+        });
+        // body
         g.fillStyle(stats.color, 1);
-        g.fillRoundedRect(0, 0, w, h, 4);
-        g.fillStyle(0xffffff, 1);
-        g.fillTriangle(w, h / 2, w - 8, 2, w - 8, h - 2);
+        g.fillRoundedRect(0, 1, w, h - 2, r);
+        // darker rear third for depth
+        g.fillStyle(0x000000, 0.18);
+        g.fillRoundedRect(1, 2, w * 0.34, h - 4, r);
+        // cabin / roof + windows per type
+        g.fillStyle(0x000000, 0.42);
+        if (vehicleType === "bus") {
+          g.fillRoundedRect(w * 0.1, h * 0.16, w * 0.82, h * 0.68, 3);
+          g.fillStyle(0x9ecbff, 0.85);
+          for (let i = 0; i < 4; i++) g.fillRect(w * (0.17 + i * 0.18), h * 0.24, w * 0.1, h * 0.52);
+        } else if (vehicleType === "motorcycle") {
+          g.fillRoundedRect(w * 0.3, h * 0.26, w * 0.34, h * 0.48, 2);
+        } else {
+          g.fillRoundedRect(w * 0.26, h * 0.16, w * 0.42, h * 0.68, 3);
+        }
+        // windshield (front)
+        g.fillStyle(0x9ecbff, 0.9);
+        g.fillRect(w * 0.66, h * 0.2, Math.max(2, w * 0.07), h * 0.6);
+        // headlights
+        g.fillStyle(0xfffbe6, 1);
+        g.fillRect(w - 2, 1, 2, 3);
+        g.fillRect(w - 2, h - 4, 2, 3);
         g.generateTexture("vehicle", w, h);
         g.clear();
 
@@ -197,6 +228,16 @@ export default function PortfolioGame() {
         g.generateTexture("smoke", 8, 8);
         g.clear();
 
+        // Small obstacle — orange traffic cone (top-down), scattered on roads
+        g.fillStyle(0xf97316, 1);
+        g.fillTriangle(8, 0, 1, 15, 15, 15);
+        g.fillStyle(0xffffff, 0.85);
+        g.fillRect(4, 8, 8, 2);
+        g.fillStyle(0x9a3412, 1);
+        g.fillRect(1, 14, 14, 2);
+        g.generateTexture("cone", 16, 16);
+        g.clear();
+
         g.destroy();
       }
 
@@ -222,6 +263,26 @@ export default function PortfolioGame() {
           }
         }
 
+        // Small obstacles — traffic cones scattered on the road corridors
+        // (never inside a building block, clear of spawn and bus stops).
+        this.obstacles = this.physics.add.staticGroup();
+        const onRoad = (x: number, y: number) => {
+          const lx = x % CELL;
+          const ly = y % CELL;
+          return !(lx > 100 && lx < 300 && ly > 100 && ly < 300);
+        };
+        let placed = 0;
+        for (let tries = 0; placed < 64 && tries < 800; tries++) {
+          const x = 120 + Math.random() * (WORLD_SIZE - 240);
+          const y = 120 + Math.random() * (WORLD_SIZE - 240);
+          if (!onRoad(x, y)) continue;
+          if (Phaser.Math.Distance.Between(x, y, 60, 60) < 220) continue;
+          if (BUS_STOPS.some((s) => Phaser.Math.Distance.Between(x, y, s.x, s.y) < 90)) continue;
+          const cone = this.obstacles.create(x, y, "cone") as Phaser.Physics.Arcade.Sprite;
+          cone.setCircle(6, 2, 4);
+          placed++;
+        }
+
         // Bus stops — overlap only, never block movement
         const stopsGroup = this.physics.add.staticGroup();
         BUS_STOPS.forEach((stop) => {
@@ -240,18 +301,26 @@ export default function PortfolioGame() {
         // no setMaxVelocity: Arcade clamps per-axis (distorts diagonals);
         // the grip model clamps true forward speed instead
         this.player.setCollideWorldBounds(true);
+        this.player.setDepth(10); // above smoke + cones
         this.cameras.main.startFollow(this.player, true, 0.1, 0.1);
 
-        // White tire smoke while drifting — dense enough to read as a trail
+        this.physics.add.collider(this.player, this.obstacles);
+        if (process.env.NODE_ENV === "development") {
+          (window as unknown as Record<string, unknown>).__driveScene = this;
+        }
+
+        // White tire smoke while drifting. Positioned each frame at the rear
+        // axle (update loop), depth 5 so it sits UNDER the car on the road.
         this.skid = this.add.particles(0, 0, "smoke", {
-          frequency: 14,
-          lifespan: 620,
-          alpha: { start: 0.55, end: 0 },
-          scale: { start: 1.4, end: 3.4 },
-          speed: { min: 4, max: 22 },
-          follow: this.player,
+          frequency: 8,
+          quantity: 2,
+          lifespan: 700,
+          alpha: { start: 0.85, end: 0 },
+          scale: { start: 2.0, end: 4.6 },
+          speed: { min: 6, max: 30 },
           emitting: false,
         });
+        this.skid.setDepth(5);
 
         this.physics.add.collider(this.player, this.buildings);
         this.physics.add.overlap(this.player, stopsGroup, (_playerObj, stopObj) => {
@@ -284,6 +353,7 @@ export default function PortfolioGame() {
         this.minimapCamera.ignore(roadGraphics);
         this.minimapCamera.ignore(this.buildings);
         this.minimapCamera.ignore(this.skid);
+        this.minimapCamera.ignore(this.obstacles);
 
         // Inputs
         if (this.input.keyboard) {
@@ -354,6 +424,10 @@ export default function PortfolioGame() {
         body.velocity.x = forward.x * vF + right.x * vL;
         body.velocity.y = forward.y * vF + right.y * vL;
 
+        // Smoke puffs from the rear axle (behind the nose), so the trail
+        // streams out from under the back of the car while drifting.
+        const rear = stats.size[0] * 0.42;
+        this.skid.setPosition(this.player.x - forward.x * rear, this.player.y - forward.y * rear);
         this.skid.emitting = drifting;
 
         const moved = Phaser.Math.Distance.Between(this.lastX, this.lastY, this.player.x, this.player.y);
