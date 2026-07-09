@@ -3,15 +3,18 @@
 import { useEffect, useRef, useState } from "react";
 import Phaser from "phaser";
 import { motion } from "framer-motion";
-import { X, Loader2, RotateCcw } from "lucide-react";
+import { X, Loader2, RotateCcw, ChevronLeft, ChevronRight, ArrowUp, Flame } from "lucide-react";
 import Leaderboard from "@/src/components/game/Leaderboard";
 
 /* ═══════════════════════════════════════════════════════════════
    WEB RUSH — Subway-Surfers-style 3-lane runner.
    Portrait 720×1280 world (Scale.FIT). Swipe / arrow keys to change
-   lanes, swipe up / Space / tap to jump. Low barriers are jumpable,
-   full blockers must be dodged; web tokens add +5. Speed ramps.
-   Best score persists; scores post to the global "rush" leaderboard.
+   lanes, swipe up / Space / tap to jump. HOLD Shift (or the on-screen
+   NITRO button) to boost — flames erupt behind the runner and the
+   world blurs past faster, draining a boost meter that refills over
+   time. Low barriers are jumpable, full blockers must be dodged; web
+   tokens add +5 and top the boost meter up. Speed ramps. Best score
+   persists; scores post to the global "rush" leaderboard.
    ═══════════════════════════════════════════════════════════════ */
 
 const BASE_W = 720;
@@ -23,6 +26,17 @@ const MAX_SPEED = 900;
 const RAMP_PER_S = 9;
 const JUMP_MS = 520;
 const BEST_KEY = "web-rush-best";
+const BOOST_MULT = 1.85; // travel multiplier while nitro is active
+const BOOST_DRAIN = 45; // energy/sec spent boosting
+const BOOST_REFILL = 20; // energy/sec regained when not
+const BOOST_MIN = 12; // need at least this much to re-engage
+
+/** Methods the React on-screen controls call on the live scene. */
+interface RushControls {
+  moveLane: (dir: number) => void;
+  jump: () => void;
+  setBoost: (v: boolean) => void;
+}
 
 interface DeathData {
   score: number;
@@ -36,6 +50,7 @@ interface WebRushProps {
 export default function WebRush({ onExit }: WebRushProps) {
   const gameRef = useRef<HTMLDivElement>(null);
   const gameInstance = useRef<Phaser.Game | null>(null);
+  const controls = useRef<RushControls | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [death, setDeath] = useState<DeathData | null>(null);
 
@@ -60,6 +75,12 @@ export default function WebRush({ onExit }: WebRushProps) {
       dead = false;
       airborne = false;
       swipeStart: { x: number; y: number } | null = null;
+      boostHeld = false;
+      boostActive = false;
+      boostEnergy = 100;
+      nitro!: Phaser.GameObjects.Particles.ParticleEmitter;
+      boostBarBg!: Phaser.GameObjects.Rectangle;
+      boostBarFill!: Phaser.GameObjects.Rectangle;
 
       constructor() {
         super({ key: "RushScene" });
@@ -113,6 +134,14 @@ export default function WebRush({ onExit }: WebRushProps) {
         g.fillStyle(0xffffff, 1);
         g.fillRect(0, 0, 5, 5);
         g.generateTexture("dot", 5, 5);
+        g.clear();
+
+        // soft flame puff for the nitro trail (radial white → tinted at runtime)
+        for (let i = 10; i >= 1; i--) {
+          g.fillStyle(0xffffff, 0.12);
+          g.fillCircle(16, 16, (i / 10) * 15);
+        }
+        g.generateTexture("flame", 32, 32);
         g.destroy();
       }
 
@@ -123,6 +152,9 @@ export default function WebRush({ onExit }: WebRushProps) {
         this.webs = 0;
         this.dead = false;
         this.airborne = false;
+        this.boostHeld = false;
+        this.boostActive = false;
+        this.boostEnergy = 100;
         this.obstacles = [];
         this.tokens = [];
         this.laneDashes = [];
@@ -138,9 +170,27 @@ export default function WebRush({ onExit }: WebRushProps) {
           }
         }
 
+        // Nitro flame trail — erupts from the runner's back (screen-down)
+        // while boosting. Additive blend + orange→gold tint reads as thrust.
+        this.nitro = this.add.particles(0, 0, "flame", {
+          x: LANES[1],
+          y: PLAYER_Y + 30,
+          lifespan: 340,
+          speedY: { min: 220, max: 420 },
+          speedX: { min: -60, max: 60 },
+          scale: { start: 1.5, end: 0 },
+          alpha: { start: 0.9, end: 0 },
+          tint: [0xffffff, 0xfde047, 0xf97316, 0xdc2626],
+          blendMode: "ADD",
+          frequency: 16,
+          quantity: 2,
+          emitting: false,
+        });
+        this.nitro.setDepth(1);
+
         // Player + shadow
         this.playerShadow = this.add.ellipse(LANES[1], PLAYER_Y + 46, 66, 18, 0x000000, 0.45);
-        this.player = this.add.image(LANES[1], PLAYER_Y, "runner");
+        this.player = this.add.image(LANES[1], PLAYER_Y, "runner").setDepth(2);
 
         // HUD
         const font = { fontFamily: "'Arial Black', Verdana, sans-serif" };
@@ -162,6 +212,18 @@ export default function WebRush({ onExit }: WebRushProps) {
           })
           .setOrigin(0.5);
 
+        // Boost meter — bottom-center bar that drains/fills with nitro
+        const barW = 240;
+        this.add
+          .text(BASE_W / 2, BASE_H - 116, "NITRO", { ...font, fontSize: "13px", color: "#f97316" })
+          .setOrigin(0.5);
+        this.boostBarBg = this.add
+          .rectangle(BASE_W / 2, BASE_H - 96, barW, 14, 0x27272a)
+          .setStrokeStyle(1, 0xf97316, 0.4);
+        this.boostBarFill = this.add
+          .rectangle(BASE_W / 2 - barW / 2 + 2, BASE_H - 96, barW - 4, 10, 0xf97316)
+          .setOrigin(0, 0.5);
+
         // Input — keyboard
         this.input.keyboard?.on("keydown-LEFT", () => this.moveLane(-1));
         this.input.keyboard?.on("keydown-RIGHT", () => this.moveLane(1));
@@ -169,6 +231,15 @@ export default function WebRush({ onExit }: WebRushProps) {
         this.input.keyboard?.on("keydown-D", () => this.moveLane(1));
         this.input.keyboard?.on("keydown-SPACE", () => this.jump());
         this.input.keyboard?.on("keydown-UP", () => this.jump());
+        this.input.keyboard?.on("keydown-SHIFT", () => this.setBoost(true));
+        this.input.keyboard?.on("keyup-SHIFT", () => this.setBoost(false));
+
+        // Expose controls for the React on-screen buttons (mobile)
+        controls.current = {
+          moveLane: (d) => this.moveLane(d),
+          jump: () => this.jump(),
+          setBoost: (v) => this.setBoost(v),
+        };
 
         // Input — swipe (left/right = lane, up = jump, plain tap = jump)
         this.input.on("pointerdown", (p: Phaser.Input.Pointer) => {
@@ -202,6 +273,10 @@ export default function WebRush({ onExit }: WebRushProps) {
           duration: 130,
           ease: "Sine.Out",
         });
+      }
+
+      setBoost(v: boolean) {
+        if (!this.dead) this.boostHeld = v;
       }
 
       jump() {
@@ -286,20 +361,41 @@ export default function WebRush({ onExit }: WebRushProps) {
         if (this.dead) return;
         const dt = deltaMs / 1000;
         this.speed = Math.min(MAX_SPEED, this.speed + RAMP_PER_S * dt);
-        this.distance += this.speed * dt;
+
+        // ── Nitro: engage needs BOOST_MIN energy, stays on until released or
+        // drained; drains while active, refills otherwise. ──
+        if (this.boostActive) {
+          if (!this.boostHeld || this.boostEnergy <= 0) this.boostActive = false;
+        } else if (this.boostHeld && this.boostEnergy >= BOOST_MIN) {
+          this.boostActive = true;
+        }
+        const boosting = this.boostActive;
+        this.boostEnergy = Phaser.Math.Clamp(
+          this.boostEnergy + (boosting ? -BOOST_DRAIN : BOOST_REFILL) * dt,
+          0,
+          100
+        );
+        const travel = this.speed * (boosting ? BOOST_MULT : 1);
+        this.distance += travel * dt;
+
+        // nitro flames from the runner's back + meter readout
+        this.nitro.setPosition(this.player.x, PLAYER_Y + 30);
+        this.nitro.emitting = boosting;
+        this.boostBarFill.scaleX = this.boostEnergy / 100;
+        this.boostBarFill.setFillStyle(this.boostEnergy < 25 ? 0xdc2626 : 0xf97316);
 
         const score = Math.floor(this.distance / 40) + this.webs * 5;
         this.scoreText.setText(String(score));
 
         // scroll lane dashes
         for (const d of this.laneDashes) {
-          d.y += this.speed * dt;
+          d.y += travel * dt;
           if (d.y > BASE_H + 60) d.y -= BASE_H + 120;
         }
 
         // obstacles march down
         this.obstacles = this.obstacles.filter(({ obj, lane, kind }) => {
-          obj.y += this.speed * dt;
+          obj.y += travel * dt;
           if (obj.y > BASE_H + 160) {
             obj.destroy();
             return false;
@@ -310,15 +406,16 @@ export default function WebRush({ onExit }: WebRushProps) {
           return true;
         });
 
-        // web tokens
+        // web tokens — collecting one tops the nitro meter up
         this.tokens = this.tokens.filter(({ obj, lane }) => {
-          obj.y += this.speed * dt;
+          obj.y += travel * dt;
           if (obj.y > BASE_H + 60) {
             obj.destroy();
             return false;
           }
           if (lane === this.lane && Math.abs(obj.y - PLAYER_Y) < 44 && !this.airborne) {
             this.webs += 1;
+            this.boostEnergy = Math.min(100, this.boostEnergy + 12);
             obj.destroy();
             return false;
           }
@@ -378,6 +475,40 @@ export default function WebRush({ onExit }: WebRushProps) {
         <X size={24} strokeWidth={3} />
       </motion.button>
 
+      {/* ── On-screen controls — shown on touch devices (hidden while dead).
+          Lane arrows bottom-left, JUMP + hold-NITRO bottom-right. ── */}
+      {!isLoading && !death && (
+        <div className="pointer-events-none absolute inset-x-0 bottom-6 z-[105] flex items-end justify-between px-6 md:hidden">
+          <div className="flex gap-3">
+            <ControlButton label="Move left" onTap={() => controls.current?.moveLane(-1)}>
+              <ChevronLeft size={30} strokeWidth={2.5} />
+            </ControlButton>
+            <ControlButton label="Move right" onTap={() => controls.current?.moveLane(1)}>
+              <ChevronRight size={30} strokeWidth={2.5} />
+            </ControlButton>
+          </div>
+          <div className="flex items-end gap-3">
+            {/* Hold to boost */}
+            <button
+              aria-label="Hold for nitro"
+              onPointerDown={(e) => {
+                e.preventDefault();
+                controls.current?.setBoost(true);
+              }}
+              onPointerUp={() => controls.current?.setBoost(false)}
+              onPointerLeave={() => controls.current?.setBoost(false)}
+              onPointerCancel={() => controls.current?.setBoost(false)}
+              className="pointer-events-auto flex h-16 w-16 items-center justify-center rounded-full border border-orange-400/60 bg-orange-500/25 text-orange-300 backdrop-blur-md active:scale-90 active:bg-orange-500/50"
+            >
+              <Flame size={26} />
+            </button>
+            <ControlButton label="Jump" onTap={() => controls.current?.jump()}>
+              <ArrowUp size={30} strokeWidth={2.5} />
+            </ControlButton>
+          </div>
+        </div>
+      )}
+
       {/* ── Death overlay ── */}
       {death && (
         <div className="absolute inset-0 z-40 flex items-center justify-center overflow-y-auto bg-black/75 p-4 backdrop-blur-sm">
@@ -422,5 +553,29 @@ export default function WebRush({ onExit }: WebRushProps) {
         </div>
       )}
     </div>
+  );
+}
+
+/* Round glass tap button for the mobile on-screen controls. */
+function ControlButton({
+  label,
+  onTap,
+  children,
+}: {
+  label: string;
+  onTap: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      aria-label={label}
+      onPointerDown={(e) => {
+        e.preventDefault();
+        onTap();
+      }}
+      className="pointer-events-auto flex h-16 w-16 items-center justify-center rounded-full border border-white/15 bg-white/10 text-white backdrop-blur-md active:scale-90 active:bg-white/25"
+    >
+      {children}
+    </button>
   );
 }
