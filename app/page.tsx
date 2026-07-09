@@ -159,15 +159,18 @@ export default function Home() {
             animate={{ scaleY: 1 }}
             transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1] }}
           />
-          {/* Lightning-S — same composition as the navbar trigger */}
+          {/* SRC wordmark — same composition as the navbar trigger */}
           <motion.div
-            className="relative flex items-center justify-center text-red-500"
+            className="relative flex items-center justify-center"
             initial={reduceMotion ? false : { opacity: 0, scale: 0.85 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: reduceMotion ? 0 : 0.5, duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
           >
-            <Zap size={44} className="absolute -left-5 text-yellow-500 opacity-80" />
-            <span className="text-6xl font-black italic tracking-tighter">S</span>
+            <span className="relative flex items-center justify-center text-red-500">
+              <Zap size={40} className="absolute -left-[18px] text-yellow-500 opacity-80" />
+              <span className="text-6xl font-black italic tracking-tighter">S</span>
+            </span>
+            <span className="text-6xl font-black italic tracking-tighter text-white">RC</span>
           </motion.div>
           <motion.p
             key={msgIndex}

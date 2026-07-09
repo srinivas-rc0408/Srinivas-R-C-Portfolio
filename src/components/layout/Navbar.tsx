@@ -47,18 +47,27 @@ export default function Navbar({ onMenuTrigger }: NavbarProps) {
             </motion.button>
           )}
 
-          {/* Menu Trigger (Lightning S) */}
+          {/* Menu Trigger — SRC wordmark (lightning S + RC) */}
           <motion.button
             onClick={onMenuTrigger}
-            aria-label="Open menu"
-            whileHover={{ scale: 1.1, textShadow: "0 0 8px rgba(255,255,255,0.8)" }}
+            aria-label="Open menu — Srinivas R C's Portfolio"
+            whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
-            className="group relative flex items-center justify-center p-2 rounded-xl transition-all duration-300 hover:shadow-[0_0_20px_rgba(220,38,38,0.5)] bg-white/5 hover:bg-white/10"
+            className="group relative flex items-center justify-center gap-[1px] rounded-xl pl-3 pr-2.5 py-2 transition-all duration-300 hover:shadow-[0_0_20px_rgba(220,38,38,0.5)] bg-white/5 hover:bg-white/10"
           >
-            <div className="relative flex items-center justify-center text-red-500">
-              <Zap size={20} className="absolute -left-2 text-yellow-500 opacity-80" />
+            <span className="relative flex items-center justify-center text-red-500">
+              <Zap size={18} className="absolute -left-[9px] text-yellow-500 opacity-80" />
               <span className="font-black text-xl italic tracking-tighter">S</span>
-            </div>
+            </span>
+            <span className="font-black text-xl italic tracking-tighter text-white">RC</span>
+
+            {/* Hover tooltip (desktop) */}
+            <span
+              role="tooltip"
+              className="pointer-events-none absolute left-0 top-full mt-2 whitespace-nowrap rounded-lg border border-white/10 bg-black/90 px-3 py-1.5 text-[10px] font-semibold uppercase tracking-widest text-white opacity-0 shadow-xl backdrop-blur-md transition-opacity duration-300 group-hover:opacity-100"
+            >
+              Srinivas R C&apos;s Portfolio
+            </span>
           </motion.button>
 
           {/* NEW Home Button */}
