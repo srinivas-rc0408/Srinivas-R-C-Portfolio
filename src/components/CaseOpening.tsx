@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback, useRef, useEffect, useMemo, useSyncExternalStore } from "react";
+import { createPortal } from "react-dom";
 import useSWR from "swr";
 import { motion, AnimatePresence, useMotionValue, useTransform, animate } from "framer-motion";
 import { useRouter } from "next/navigation";
@@ -159,6 +160,11 @@ export default function CaseOpening({ isOpen, onClose, onOpenDocument }: CaseOpe
       timeoutsRef.current.forEach(clearTimeout);
     };
   }, []);
+
+  /* Portal to <body>: the page's <main> has z-10 which traps a fixed
+     child below the footer (z-30). Rendering into body escapes it. */
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
 
   const clearTimeouts = () => {
     timeoutsRef.current.forEach(clearTimeout);
@@ -359,7 +365,9 @@ export default function CaseOpening({ isOpen, onClose, onOpenDocument }: CaseOpe
   const rarity = winner ? RARITIES[winner.rarity] : null;
   const WinnerIcon = winner?.icon;
 
-  return (
+  if (!mounted) return null;
+
+  return createPortal(
     <AnimatePresence>
       {isOpen && phase !== "CLOSED" && (
         <motion.div
@@ -772,7 +780,8 @@ export default function CaseOpening({ isOpen, onClose, onOpenDocument }: CaseOpe
           </motion.div>
         </motion.div>
       )}
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body
   );
 }
 

@@ -29,6 +29,13 @@ import { useScrollStore } from "@/src/contexts/ScrollStore";
 const LOADER_MESSAGES = ["Spinning up the web…", "Anchoring web lines…", "Suiting up…"];
 type LoaderState = "pending" | "visible" | "leaving" | "done";
 
+/* Shared styling for the three action cards — one red-glow language across
+   all of them (pulse staggered per-card via inline animationDelay). */
+const CARD_CLASS =
+  "relative overflow-hidden flex flex-col items-center justify-center gap-4 h-full cursor-pointer rounded-2xl bg-zinc-950/40 backdrop-blur-3xl border border-red-500/30 hover:border-red-500 hover:bg-zinc-900/60 shadow-[inset_0_0_20px_rgba(220,38,38,0.1)] p-10 transition-all duration-500 text-center glow-pulse focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500/70";
+const CARD_ICON_CLASS =
+  "relative z-10 h-16 w-16 flex items-center justify-center rounded-full bg-red-500/20 border border-red-500/40 text-red-400";
+
 /* ─── Component ─── */
 export default function Home() {
   const [gameOpen, setGameOpen] = useState(false);
@@ -230,6 +237,15 @@ export default function Home() {
             .spidey-stage bottom:35svh really lands his feet at 65svh. */}
         <section className="relative h-svh w-full flex items-center bg-transparent">
 
+          {/* Mobile legibility scrim — sits above the character (z-5) and below
+              the content (z-10). Left stays dark for the text, the right fades
+              to transparent so the character still glows through. Desktop uses
+              its two columns instead and hides this. */}
+          <div
+            aria-hidden
+            className="pointer-events-none absolute inset-0 z-[6] bg-gradient-to-r from-[#050508] via-[#050508]/80 to-transparent md:hidden"
+          />
+
           {/* ── MAIN GRID — single column below 768px, hero stacks ──
               relative z-10: must paint above the showcase's absolutely
               positioned bg-wash layer (z-0), or the left column text
@@ -415,18 +431,26 @@ export default function Home() {
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 w-full max-w-7xl px-8">
 
-            {/* Card 1: The Game / Chest */}
+            {/* All three share the red-glow treatment; the pulse is staggered
+                (0/1/2s) so the row breathes instead of flashing in lockstep. */}
+
+            {/* Card 1: Loot Vault (case opening) */}
             <motion.div
+              role="button"
+              tabIndex={0}
               initial={{ opacity: 0, y: 50 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, margin: "-100px" }}
               transition={{ delay: 0.1, duration: 0.5 }}
-              whileHover={{ scale: 1.05, y: -10 }}
+              whileHover={{ scale: 1.05, y: -10, boxShadow: "0 0 30px rgba(220,38,38,0.3)" }}
               whileTap={{ scale: 0.95 }}
               onClick={() => setGameOpen(true)}
-              className="relative flex flex-col items-center justify-center gap-4 cursor-pointer overflow-hidden rounded-2xl bg-zinc-950/40 backdrop-blur-3xl border border-white/5 hover:border-red-500/50 hover:bg-zinc-900/60 p-10 transition-all duration-500 text-center"
+              onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && setGameOpen(true)}
+              style={{ animationDelay: "0s" }}
+              className={CARD_CLASS}
             >
-              {/* Idle shine sweep — hints the card is interactive */}
+              <div className="absolute inset-0 bg-gradient-to-br from-red-500/10 to-transparent pointer-events-none" />
+              {/* Idle shine sweep — hints the chest is interactive */}
               <div
                 className="pointer-events-none absolute inset-0"
                 style={{
@@ -435,33 +459,35 @@ export default function Home() {
                   animation: "chestShine 7s ease-in-out infinite",
                 }}
               />
-              <div className="h-16 w-16 flex items-center justify-center rounded-full bg-red-500/10 border border-red-500/20 text-red-500">
+              <div className={CARD_ICON_CLASS}>
                 <Package size={32} strokeWidth={1.5} />
               </div>
-              <h2 className="text-xl font-bold text-white tracking-widest uppercase">System Vault</h2>
-              <p className="text-sm text-zinc-400">Open chest to see my details</p>
+              <h2 className="relative z-10 text-xl font-bold text-white tracking-widest uppercase">Loot Vault</h2>
+              <p className="relative z-10 text-sm text-zinc-400">Crack the case to reveal my work</p>
             </motion.div>
 
-            {/* Card 2: The Details */}
+            {/* Card 2: Master Record (all details) */}
             <Link href="/details" className="w-full">
               <motion.div
                 initial={{ opacity: 0, y: 50 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true, margin: "-100px" }}
                 transition={{ delay: 0.2, duration: 0.5 }}
-                whileHover={{ scale: 1.05, y: -10 }}
+                whileHover={{ scale: 1.05, y: -10, boxShadow: "0 0 30px rgba(220,38,38,0.3)" }}
                 whileTap={{ scale: 0.95 }}
-                className="flex flex-col items-center justify-center gap-4 cursor-pointer rounded-2xl bg-zinc-950/40 backdrop-blur-3xl border border-white/5 hover:border-red-500/50 hover:bg-zinc-900/60 p-10 transition-all duration-500 text-center h-full"
+                style={{ animationDelay: "1s" }}
+                className={CARD_CLASS}
               >
-                <div className="h-16 w-16 flex items-center justify-center rounded-full bg-white/5 border border-white/10 text-white">
+                <div className="absolute inset-0 bg-gradient-to-br from-red-500/10 to-transparent pointer-events-none" />
+                <div className={CARD_ICON_CLASS}>
                   <List size={32} strokeWidth={1.5} />
                 </div>
-                <h2 className="text-xl font-bold text-white tracking-widest uppercase">Master Record</h2>
-                <p className="text-sm text-zinc-400">View All Details</p>
+                <h2 className="relative z-10 text-xl font-bold text-white tracking-widest uppercase">Master Record</h2>
+                <p className="relative z-10 text-sm text-zinc-400">View all details</p>
               </motion.div>
             </Link>
 
-            {/* Card 3: Phaser Game */}
+            {/* Card 3: Interactive Mode (games) */}
             <Link href="/game" className="w-full">
               <motion.div
                 initial={{ opacity: 0, y: 50 }}
@@ -470,14 +496,15 @@ export default function Home() {
                 transition={{ delay: 0.3, duration: 0.5 }}
                 whileHover={{ scale: 1.05, y: -10, boxShadow: "0 0 30px rgba(220,38,38,0.3)" }}
                 whileTap={{ scale: 0.95 }}
-                className="relative overflow-hidden flex flex-col items-center justify-center gap-4 cursor-pointer rounded-2xl bg-zinc-950/40 backdrop-blur-3xl border border-red-500/30 hover:border-red-500 hover:bg-zinc-900/60 shadow-[inset_0_0_20px_rgba(220,38,38,0.1)] p-10 transition-all duration-500 text-center h-full glow-pulse"
+                style={{ animationDelay: "2s" }}
+                className={CARD_CLASS}
               >
                 <div className="absolute inset-0 bg-gradient-to-br from-red-500/10 to-transparent pointer-events-none" />
-                <div className="h-16 w-16 flex items-center justify-center rounded-full bg-red-500/20 border border-red-500/40 text-red-400 relative z-10">
+                <div className={CARD_ICON_CLASS}>
                   <Gamepad2 size={32} strokeWidth={1.5} />
                 </div>
-                <h2 className="text-xl font-bold text-white tracking-widest uppercase relative z-10">Interactive Mode</h2>
-                <p className="text-sm text-zinc-400 relative z-10">Play my portfolio game</p>
+                <h2 className="relative z-10 text-xl font-bold text-white tracking-widest uppercase">Interactive Mode</h2>
+                <p className="relative z-10 text-sm text-zinc-400">Play my portfolio games</p>
               </motion.div>
             </Link>
 

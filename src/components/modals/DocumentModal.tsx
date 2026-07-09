@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import dynamic from "next/dynamic";
 import useSWR from "swr";
 import { motion, AnimatePresence } from "framer-motion";
@@ -46,6 +47,11 @@ export default function DocumentModal({ isOpen, onClose, type, gated = true }: D
 
   const fileUrl = data?.fileUrl ?? null;
 
+  /* Portal to <body> — escapes the page <main z-10> that would otherwise
+     trap this fixed overlay beneath the footer (z-30). */
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+
   const handleLoadSuccess = (loadedPages: number) => {
     setNumPages(loadedPages);
     setPageNumber(1);
@@ -87,7 +93,9 @@ export default function DocumentModal({ isOpen, onClose, type, gated = true }: D
 
   const title = TITLES[type];
 
-  return (
+  if (!mounted) return null;
+
+  return createPortal(
     <AnimatePresence>
       {isOpen && (
         <motion.div
@@ -217,6 +225,7 @@ export default function DocumentModal({ isOpen, onClose, type, gated = true }: D
           onAuthenticated={handleGatedDownload}
         />
       )}
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body
   );
 }
