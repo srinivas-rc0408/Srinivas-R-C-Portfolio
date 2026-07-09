@@ -7,24 +7,21 @@ import { HEROES, HERO_INTERVAL_MS, type HeroConfig } from "@/lib/hero-showcase";
 
 /* ═══════════════════════════════════════════════════════════════
    HERO SHOWCASE
-   One character at a time on the hero's extreme right, logo
-   watermark behind it, page background wash keyed to the character.
-   Rotation lives in useHeroRotation (page.tsx consumes the active
-   hero for accent propagation). All motion is transform/opacity;
-   the wash layers and the character carry will-change.
+   One character at a time on the hero's extreme right. Each character
+   radiates its own logo as a glowing aura DIRECTLY BEHIND it (character
+   overlaps the logo), over a per-character background wash. Rotation
+   lives in useHeroRotation; page.tsx consumes the active hero for
+   accent propagation.
 
-   Hydration rule: `initial` props never branch on client-divergent
-   values (isStatic, live) — the server always renders the hidden
-   state and `animate` decides the visible one. Client-only layers
-   (bg wash, rim pulse) are mount-gated instead.
-
-   Mobile (<768px) and reduced motion render Spider-Man static with
-   the site-default theme — no rotation, no washes.
+   Fits every viewport: the stage box is responsive and the character
+   fills it (object-contain, bottom-right), so nothing overflows on
+   tablet/desktop. Reduced motion collapses to a static Spider-Man.
+   All motion is transform/opacity; wash + character carry will-change.
    ═══════════════════════════════════════════════════════════════ */
 
 const EXIT_EASE: [number, number, number, number] = [0.4, 0, 0.2, 1];
 
-/** 10s rotation; paused while the tab is hidden, disabled on mobile/reduced motion. */
+/** 6.5s rotation; paused while the tab is hidden, disabled on reduced motion. */
 export function useHeroRotation(enabled: boolean): HeroConfig {
   const [index, setIndex] = useState(0);
 
@@ -52,7 +49,7 @@ export function useHeroRotation(enabled: boolean): HeroConfig {
 
 interface HeroShowcaseProps {
   hero: HeroConfig;
-  /** true = static Spider-Man, no rotation visuals (mobile / reduced motion) */
+  /** true = static Spider-Man, no rotation visuals (reduced motion) */
   isStatic: boolean;
   /** gate the first entrance until the first-load screen has left */
   live: boolean;
@@ -72,15 +69,13 @@ export default function HeroShowcase({ hero, isStatic, live }: HeroShowcaseProps
   }, [isStatic]);
 
   const active = isStatic ? HEROES[0] : hero;
-  const shown = live || isStatic; // static mode has no loader gate to wait for
+  const shown = live || isStatic;
 
   return (
     <>
       {/* ── Background theme wash — full-hero layer behind everything.
           Whole gradient layers crossfade via opacity; gradient values are
-          never animated. Base #050508 stays at the edges (72% falloff).
-          Mount-gated: server markup never includes it, so no hydration
-          branch; static mode (mobile/reduced motion) never shows it. ── */}
+          never animated. Base #050508 stays at the edges (72% falloff). ── */}
       {mounted && !isStatic && (
         <div className="pointer-events-none absolute inset-0 z-0" aria-hidden>
           <AnimatePresence>
@@ -100,89 +95,70 @@ export default function HeroShowcase({ hero, isStatic, live }: HeroShowcaseProps
         </div>
       )}
 
-      {/* ── Stage — fixed dimensions (zero layout shift), extreme right,
-          bottom-anchored. Characters may bleed off the right edge by design. ── */}
+      {/* ── Stage — responsive box, extreme right, bottom-anchored.
+          Character fills it and may bleed off the right edge by design. ── */}
       <div
         aria-hidden
-        className="pointer-events-none absolute bottom-0 right-0 z-[5] h-[62svh] w-[clamp(200px,54vw,320px)] md:h-[78svh] md:w-[min(44vw,700px)]"
+        className="pointer-events-none absolute bottom-0 right-0 z-[5] h-[56svh] w-[70vw] sm:w-[58vw] md:h-[82svh] md:w-[50vw] lg:w-[44vw] xl:w-[40vw]"
       >
-        {/* Logo watermark — ambient environment behind the character; the
-            character (rendered after it) overlaps it. Capped on mobile so
-            it stays a backdrop, not wallpaper. The keyed presence child
-            animates opacity ONLY, so the static placement transform on its
-            style is never overwritten. */}
         <AnimatePresence>
           <motion.div
-            key={`logo-${active.id}`}
-            className="absolute max-w-[58vw] md:max-w-none"
-            style={{
-              right: 0,
-              top: "50%",
-              width: active.logoStyle.width,
-              willChange: "opacity",
-              transform: `translate(${active.logoStyle.offsetX}, calc(-50% + ${active.logoStyle.offsetY}))`,
+            key={active.id}
+            className="absolute inset-0"
+            initial={{ opacity: 0, x: shown ? 60 : 0 }}
+            animate={{
+              opacity: shown ? 1 : 0,
+              x: 0,
+              transition: { type: "spring", stiffness: 90, damping: 18, delay: 0.15 },
             }}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: shown ? active.logoStyle.opacity : 0 }}
-            exit={{ opacity: 0, transition: { duration: 0.45, ease: EXIT_EASE } }}
-            transition={{ duration: 0.7, ease: EXIT_EASE }}
+            exit={{ opacity: 0, x: 40, transition: { duration: 0.45, ease: EXIT_EASE } }}
           >
+            {/* Persistent accent aura (backmost) — a soft colored halo that
+                reads even where the logo is occluded, pulsing up on arrival
+                then holding. This is the "aura-farming" glow. */}
+            <motion.div
+              className="absolute inset-x-0 bottom-[6%] top-[12%] rounded-full blur-3xl"
+              style={{
+                background: `radial-gradient(ellipse at 58% 45%, ${active.theme.accent}55 0%, ${active.theme.accent}22 42%, transparent 72%)`,
+                willChange: "opacity",
+              }}
+              initial={isStatic ? false : { opacity: 0 }}
+              animate={{ opacity: isStatic ? 0.8 : [0, 1, 0.85] }}
+              transition={{ duration: 0.9, times: [0, 0.4, 1], delay: 0.2 }}
+            />
+
+            {/* Aura logo — over the glow, behind the character, scaled 1.08→1. */}
             <motion.img
               src={active.logo}
               alt=""
-              className="h-auto w-full"
-              style={{ filter: "saturate(0.65)", willChange: "transform" }}
-              initial={{ scale: 1.08 }}
+              className="absolute left-1/2 top-[44%]"
+              style={{
+                width: `${active.logoScale * 100}%`,
+                transform: `translate(calc(-50% + ${active.logoOffsetX}), calc(-50% + ${active.logoOffsetY}))`,
+                opacity: active.logoOpacity,
+                filter: `saturate(1.15) drop-shadow(0 0 34px ${active.theme.accent})`,
+                willChange: "transform, opacity",
+              }}
+              initial={isStatic ? false : { scale: 1.08 }}
               animate={{ scale: 1 }}
               transition={{ duration: 0.7, ease: EXIT_EASE }}
             />
-          </motion.div>
-        </AnimatePresence>
 
-        {/* Character — outgoing slides 40px right + fades (0.45s), incoming
-            slides in from 60px on a spring, 0.15s after the exit starts. */}
-        <AnimatePresence>
-          <motion.div
-            key={`char-${active.id}`}
-            className="absolute bottom-0 right-0 h-full"
-            style={{ width: active.stage.width, willChange: "transform, opacity" }}
-            initial={{ opacity: 0, x: 60 }}
-            animate={{
-              opacity: shown ? 1 : 0,
-              x: shown ? 0 : 60,
-              transition: { type: "spring", stiffness: 90, damping: 18, delay: 0.15 },
-            }}
-            exit={{
-              opacity: 0,
-              x: 40,
-              transition: { duration: 0.45, ease: EXIT_EASE },
-            }}
-          >
-            {/* accent rim-glow pulse on arrival (opacity-only flash) */}
-            {mounted && !isStatic && (
-              <motion.div
-                aria-hidden
-                className="absolute inset-x-0 bottom-0 top-1/4 rounded-full blur-3xl"
-                style={{
-                  background: `radial-gradient(ellipse at center, ${active.theme.accent}33 0%, transparent 70%)`,
-                }}
-                initial={{ opacity: 0 }}
-                animate={{ opacity: [0, 0.9, 0.35] }}
-                transition={{ duration: 0.9, times: [0, 0.4, 1], delay: 0.25 }}
-              />
-            )}
+            {/* Character — fills the stage, scaled/nudged per framing, on top */}
             <Image
               src={active.character}
               alt=""
               width={800}
               height={1200}
               priority={active.id === "spiderman"}
-              sizes="(max-width: 767px) 46vw, 40vw"
-              className="absolute bottom-0 right-0 h-full w-full"
+              sizes="(max-width: 767px) 70vw, 44vw"
+              className="absolute inset-0 h-full w-full"
               style={{
                 objectFit: "contain",
-                objectPosition: active.stage.align === "bottom" ? "right bottom" : "right center",
-                transform: `translate(${active.stage.offsetX}, ${active.stage.offsetY})`,
+                objectPosition: "right bottom",
+                transform: `translate(${active.charOffsetX}, ${active.charOffsetY}) scale(${active.charScale})`,
+                transformOrigin: "right bottom",
+                willChange: "transform",
               }}
             />
           </motion.div>
