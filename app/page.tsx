@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, useSyncExternalStore } from "react";
+import { useState, useEffect, useRef } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
@@ -23,20 +23,6 @@ import { hammockReveal, hammockSway } from "@/lib/spiderman-motion";
 import HeroShowcase, { useHeroRotation } from "@/src/components/HeroShowcase";
 import { HEROES } from "@/lib/hero-showcase";
 import { useScrollStore } from "@/src/contexts/ScrollStore";
-
-/* ── Mobile breakpoint — carousel disabled entirely below 768px ── */
-const MOBILE_QUERY = "(max-width: 767px)";
-function subscribeIsMobile(callback: () => void) {
-  const mq = window.matchMedia(MOBILE_QUERY);
-  mq.addEventListener("change", callback);
-  return () => mq.removeEventListener("change", callback);
-}
-function getIsMobileSnapshot() {
-  return window.matchMedia(MOBILE_QUERY).matches;
-}
-function getIsMobileServerSnapshot() {
-  return false;
-}
 
 /* ── First-load screen ────────────────────────────────────────────
    Gates ONLY on real critical assets: 1.png + fonts. No artificial
@@ -133,8 +119,9 @@ export default function Home() {
    * theme. The active hero's accent tints the location dot, the
    * Ask-AI border glow, and the primary button's hover glow.
    */
-  const isMobile = useSyncExternalStore(subscribeIsMobile, getIsMobileSnapshot, getIsMobileServerSnapshot);
-  const showcaseStatic = isMobile || !!reduceMotion;
+  // Mobile gets the full rotation too (owner request) — only reduced
+  // motion collapses to the static Spider-Man.
+  const showcaseStatic = !!reduceMotion;
   const activeHero = useHeroRotation(heroLive && !showcaseStatic);
   const accent = showcaseStatic ? HEROES[0].theme.accent : activeHero.theme.accent;
 

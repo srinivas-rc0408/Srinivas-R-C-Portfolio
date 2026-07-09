@@ -104,17 +104,17 @@ export default function HeroShowcase({ hero, isStatic, live }: HeroShowcaseProps
           bottom-anchored. Characters may bleed off the right edge by design. ── */}
       <div
         aria-hidden
-        className="pointer-events-none absolute bottom-0 right-0 z-[5] h-[52svh] w-[clamp(150px,40vw,240px)] md:h-[78svh] md:w-[min(44vw,700px)]"
+        className="pointer-events-none absolute bottom-0 right-0 z-[5] h-[62svh] w-[clamp(200px,54vw,320px)] md:h-[78svh] md:w-[min(44vw,700px)]"
       >
-        {/* Logo watermark — ambient environment behind the character.
-            Desktop only: on the static mobile layout it would sit behind
-            the text column and muddy it. The keyed presence child animates
-            opacity ONLY, so the static placement transform on its style is
-            never overwritten. */}
+        {/* Logo watermark — ambient environment behind the character; the
+            character (rendered after it) overlaps it. Capped on mobile so
+            it stays a backdrop, not wallpaper. The keyed presence child
+            animates opacity ONLY, so the static placement transform on its
+            style is never overwritten. */}
         <AnimatePresence>
           <motion.div
             key={`logo-${active.id}`}
-            className="absolute hidden md:block"
+            className="absolute max-w-[58vw] md:max-w-none"
             style={{
               right: 0,
               top: "50%",

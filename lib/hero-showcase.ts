@@ -71,4 +71,4 @@ export const HEROES: HeroConfig[] = [
   },
 ];
 
-export const HERO_INTERVAL_MS = 10_000;
+export const HERO_INTERVAL_MS = 6_500;
