@@ -14,6 +14,7 @@ import {
   Briefcase,
   GraduationCap,
   Crown,
+  ChevronUp,
 } from "lucide-react";
 import Leaderboard from "@/src/components/game/Leaderboard";
 
@@ -505,6 +506,22 @@ export default function GeometryDash({ onExit }: GeometryDashProps) {
       >
         <X size={24} strokeWidth={3} />
       </motion.button>
+
+      {/* ── Mobile jump button — explicit affordance (tapping anywhere also
+          jumps; this makes the control obvious on touch). Hidden on desktop
+          and while dead. ── */}
+      {!isLoading && !death && (
+        <button
+          aria-label="Jump"
+          onPointerDown={(e) => {
+            e.preventDefault();
+            window.dispatchEvent(new Event("dash-press"));
+          }}
+          className="absolute bottom-8 left-1/2 z-[105] flex h-20 w-20 -translate-x-1/2 items-center justify-center rounded-full border border-red-400/60 bg-red-500/25 text-red-200 backdrop-blur-md active:scale-90 active:bg-red-500/50 md:hidden"
+        >
+          <ChevronUp size={34} strokeWidth={2.5} />
+        </button>
+      )}
 
       {/* ── Death overlay: score + achievement box reveal ── */}
       {death && (
