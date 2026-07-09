@@ -54,6 +54,27 @@ export default function Footer() {
     // no overflow-hidden on <footer> — in the flex column it would zero the
     // footer's min-content size and collapse it; children clip themselves
     <footer className="relative z-30 mt-auto w-full shrink-0 border-t border-white/10 bg-white/[0.03] backdrop-blur-xl">
+      {/* ── Deadpool lounging exactly on the footer line ──
+          bottom-full puts his lying pose flush on the footer's top border;
+          the scroll-in is a soft rise + settle, transform/opacity only. */}
+      <motion.div
+        aria-hidden
+        className="pointer-events-none absolute bottom-full left-1/2 z-10 w-[min(78vw,760px)] -translate-x-1/2"
+        initial={reduceMotion ? false : { opacity: 0, y: 48 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true, amount: 0.5 }}
+        transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1] }}
+      >
+        <Image
+          src="/heroes/deadpool.png"
+          width={2240}
+          height={549}
+          sizes="(min-width: 975px) 760px, 78vw"
+          alt=""
+          style={{ width: "100%", height: "auto" }}
+        />
+      </motion.div>
+
       {/* Subtle red glow rising from the bottom edge */}
       <div
         aria-hidden
@@ -67,10 +88,32 @@ export default function Footer() {
       {/* Chibi Spidey keeping watch on the right (owner-provided asset) */}
       <motion.div
         aria-hidden
-        className="pointer-events-none absolute bottom-16 right-3 hidden w-[90px] sm:block md:right-8 md:w-[120px]"
+        className="pointer-events-none absolute bottom-16 right-3 w-[76px] sm:w-[90px] md:right-8 md:w-[120px]"
         animate={reduceMotion ? undefined : { y: [0, -7, 0] }}
         transition={{ duration: 3.4, repeat: Infinity, ease: "easeInOut" }}
       >
+        {/* "Hi, there!" thought cloud — pops in ~1.5s after the footer
+            scrolls into view, then stays. Rides the float with Spidey. */}
+        <motion.div
+          className="absolute -top-11 right-0 md:-top-12"
+          style={{ transformOrigin: "bottom right" }}
+          initial={reduceMotion ? { opacity: 0 } : { opacity: 0, scale: 0.5, y: 10 }}
+          whileInView={{ opacity: 1, scale: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ delay: 1.5, type: "spring", stiffness: 280, damping: 18 }}
+        >
+          <div className="relative rounded-2xl bg-white px-3.5 py-1.5 shadow-[0_10px_35px_rgba(0,0,0,0.45)]">
+            <span
+              className="whitespace-nowrap text-[13px] font-bold text-zinc-900"
+              style={{ fontFamily: "'Comic Sans MS', 'Segoe UI', sans-serif" }}
+            >
+              Hi, there!
+            </span>
+            {/* thought trail toward Spidey */}
+            <div className="absolute -bottom-2 right-1 h-2 w-2 rounded-full bg-white" />
+            <div className="absolute -bottom-4 right-[-6px] h-1.5 w-1.5 rounded-full bg-white" />
+          </div>
+        </motion.div>
         <Image
           src="/spiderman/footer-spidey.png"
           width={435}

@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import {
@@ -18,8 +17,6 @@ import {
 import Link from "next/link";
 import CaseOpening from "@/src/components/CaseOpening";
 import DocumentModal from "@/src/components/modals/DocumentModal";
-import { HAMMOCK } from "@/lib/spiderman-assets";
-import { hammockReveal, hammockSway } from "@/lib/spiderman-motion";
 import HeroShowcase, { useHeroRotation } from "@/src/components/HeroShowcase";
 import { HEROES } from "@/lib/hero-showcase";
 import { useScrollStore } from "@/src/contexts/ScrollStore";
@@ -124,21 +121,6 @@ export default function Home() {
   const showcaseStatic = !!reduceMotion;
   const activeHero = useHeroRotation(heroLive && !showcaseStatic);
   const accent = showcaseStatic ? HEROES[0].theme.accent : activeHero.theme.accent;
-
-  /* ── "Hi, there" thought cloud: pops in once Spidey's entrance settles ── */
-  const [hiThere, setHiThere] = useState(false);
-  useEffect(() => {
-    if (!heroLive) return;
-    const show = setTimeout(() => setHiThere(true), 1200);
-    const hide = setTimeout(() => setHiThere(false), 6400);
-    return () => {
-      clearTimeout(show);
-      clearTimeout(hide);
-    };
-  }, [heroLive]);
-
-  /* ── Hammock: reveal once on scroll, then sway forever (unless reduced motion) ── */
-  const [hammockSwaying, setHammockSwaying] = useState(false);
 
   /* ── Stagger entrance variants ── */
   const containerVariants = {
@@ -393,89 +375,14 @@ export default function Home() {
           </div>
 
           {/* ── HERO SHOWCASE — bg wash + logo watermark + character ── */}
+          {/* (the "Hi, there!" cloud now lives with the footer Spidey) */}
           <HeroShowcase hero={activeHero} isStatic={showcaseStatic} live={heroLive} />
-
-          {/* "Hi, there" thought cloud — greets once, left of Spidey's head */}
-          <AnimatePresence>
-            {hiThere && (
-              <motion.div
-                aria-hidden
-                className="absolute right-[34vw] top-[40svh] z-20 md:right-[17vw] md:top-[20svh]"
-                style={{ transformOrigin: "bottom right" }}
-                initial={reduceMotion ? { opacity: 0 } : { opacity: 0, scale: 0.5, y: 10 }}
-                animate={{ opacity: 1, scale: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.85, y: -6 }}
-                transition={{ type: "spring", stiffness: 280, damping: 18 }}
-              >
-                <div className="relative rounded-2xl bg-white px-4 py-2 shadow-[0_10px_35px_rgba(0,0,0,0.45)]">
-                  <span
-                    className="whitespace-nowrap text-sm font-bold text-zinc-900"
-                    style={{ fontFamily: "'Comic Sans MS', 'Segoe UI', sans-serif" }}
-                  >
-                    Hi, there!
-                  </span>
-                  {/* thought-cloud trail toward Spidey */}
-                  <div className="absolute -bottom-2.5 right-2 h-2.5 w-2.5 rounded-full bg-white" />
-                  <div className="absolute -bottom-5 right-0 h-1.5 w-1.5 rounded-full bg-white" />
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
         </section>
 
         {/* ═══════════════════════════════════════════════ */}
         {/* ACTION SECTION                                 */}
         {/* ═══════════════════════════════════════════════ */}
         <section className="relative min-h-screen w-full flex flex-col justify-center items-center py-24 bg-transparent z-20">
-          {/* Hammock — full-bleed scroll reveal, top of this section. Not a background image. */}
-          <motion.div
-            className="relative w-full overflow-hidden"
-            style={{ width: "100vw", transformOrigin: "top center" }}
-            initial={reduceMotion ? false : "hidden"}
-            whileInView={reduceMotion ? undefined : "visible"}
-            animate={reduceMotion ? "visible" : hammockSwaying ? hammockSway : undefined}
-            viewport={{ once: true, amount: 0.35 }}
-            variants={hammockReveal}
-            onAnimationComplete={() => {
-              if (!reduceMotion) setHammockSwaying(true);
-            }}
-          >
-            {/* Capped at 1200px from the 2000px-wide @2x source — always
-                downscaled, never stretched. quality 100 keeps the optimizer
-                from softening it. */}
-            <Image
-              src={HAMMOCK.src}
-              width={HAMMOCK.w}
-              height={HAMMOCK.h}
-              sizes="(min-width: 1200px) 1200px, 100vw"
-              quality={100}
-              className="mx-auto w-full max-w-[1200px]"
-              style={{ height: "auto" }}
-              alt=""
-            />
-            {/* On wide screens the web strands continue to the viewport edges,
-                so the hammock still reads as strung across the whole screen.
-                Anchor rows measured from 11.png alpha: left 31%, right 10%. */}
-            <div
-              aria-hidden
-              className="absolute left-0 top-[31%] h-px"
-              style={{
-                width: "max(0px, calc((100% - 1200px) / 2))",
-                background:
-                  "linear-gradient(to right, transparent, rgba(255,255,255,0.35))",
-              }}
-            />
-            <div
-              aria-hidden
-              className="absolute right-0 top-[10%] h-px"
-              style={{
-                width: "max(0px, calc((100% - 1200px) / 2))",
-                background:
-                  "linear-gradient(to left, transparent, rgba(255,255,255,0.35))",
-              }}
-            />
-          </motion.div>
-
           {/* ── Sticky mini-header ── */}
           <div className="sticky top-[72px] z-30 mb-12 flex w-full items-center justify-between border-b border-white/5 bg-black/60 px-6 py-4 backdrop-blur-xl md:px-12">
             <div className="flex items-center gap-3 text-xs font-bold uppercase tracking-widest text-zinc-300">
