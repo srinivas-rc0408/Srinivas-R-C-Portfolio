@@ -37,13 +37,15 @@ export const HEROES: HeroConfig[] = [
     character: "/heroes/spider_man.png",
     logo: "/heroes/logo-spiderman.png",
     theme: { bgFrom: "#1a0508", bgTo: "#050508", accent: "#DC2626" },
-    charScale: 1.16,
-    charOffsetX: "10%",
+    charScale: 1.12,
+    charOffsetX: "0%", // art's cut edge sits exactly on the right wall — no over-clip
     charOffsetY: "0%",
-    logoScale: 0.78,
-    logoOpacity: 0.2,
-    logoOffsetX: "-14%",
-    logoOffsetY: "-6%",
+    // Spider-Man hugs the right wall, so his emblem floats in the open space
+    // to his LEFT — fully visible except ~a quarter tucked behind his body.
+    logoScale: 0.86,
+    logoOpacity: 0.3,
+    logoOffsetX: "-20%",
+    logoOffsetY: "-4%",
   },
   {
     // 797×1104 — upper body, bleeds bottom

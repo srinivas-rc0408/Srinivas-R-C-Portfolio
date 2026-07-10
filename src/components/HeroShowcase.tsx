@@ -105,10 +105,12 @@ export default function HeroShowcase({ hero, isStatic, live }: HeroShowcaseProps
           <motion.div
             key={active.id}
             className="absolute inset-0"
-            initial={{ opacity: 0, x: shown ? 60 : 0 }}
+            // initial NEVER branches on `shown` (live/isStatic differ between
+            // server and client → hydration mismatch); animate does the gating
+            initial={{ opacity: 0, x: 60 }}
             animate={{
               opacity: shown ? 1 : 0,
-              x: 0,
+              x: shown ? 0 : 60,
               transition: { type: "spring", stiffness: 90, damping: 18, delay: 0.15 },
             }}
             exit={{ opacity: 0, x: 40, transition: { duration: 0.45, ease: EXIT_EASE } }}
@@ -127,22 +129,32 @@ export default function HeroShowcase({ hero, isStatic, live }: HeroShowcaseProps
               transition={{ duration: 0.9, times: [0, 0.4, 1], delay: 0.2 }}
             />
 
-            {/* Aura logo — over the glow, behind the character, scaled 1.08→1. */}
-            <motion.img
-              src={active.logo}
-              alt=""
+            {/* Aura logo — over the glow, behind the character. The OUTER div
+                owns the static placement translate; the inner motion.img only
+                animates scale/opacity. They must stay separate: framer
+                replaces the whole transform string when it animates scale,
+                which would silently erase the placement offsets. */}
+            <div
               className="absolute left-1/2 top-[44%]"
               style={{
                 width: `${active.logoScale * 100}%`,
                 transform: `translate(calc(-50% + ${active.logoOffsetX}), calc(-50% + ${active.logoOffsetY}))`,
-                opacity: active.logoOpacity,
-                filter: `saturate(1.15) drop-shadow(0 0 34px ${active.theme.accent})`,
-                willChange: "transform, opacity",
               }}
-              initial={isStatic ? false : { scale: 1.08 }}
-              animate={{ scale: 1 }}
-              transition={{ duration: 0.7, ease: EXIT_EASE }}
-            />
+            >
+              <motion.img
+                src={active.logo}
+                alt=""
+                className="h-auto w-full"
+                style={{
+                  opacity: active.logoOpacity,
+                  filter: `saturate(1.15) drop-shadow(0 0 34px ${active.theme.accent})`,
+                  willChange: "transform",
+                }}
+                initial={isStatic ? false : { scale: 1.08 }}
+                animate={{ scale: 1 }}
+                transition={{ duration: 0.7, ease: EXIT_EASE }}
+              />
+            </div>
 
             {/* Character — fills the stage, scaled/nudged per framing, on top */}
             <Image
@@ -151,6 +163,10 @@ export default function HeroShowcase({ hero, isStatic, live }: HeroShowcaseProps
               width={800}
               height={1200}
               priority={active.id === "spiderman"}
+              // always above the fold and the only character mounted — eager
+              // kills the LCP-lazy warning on non-Spidey frames (priority
+              // already implies eager for Spidey, so keep them exclusive)
+              loading={active.id === "spiderman" ? undefined : "eager"}
               sizes="(max-width: 767px) 70vw, 44vw"
               className="absolute inset-0 h-full w-full"
               style={{
