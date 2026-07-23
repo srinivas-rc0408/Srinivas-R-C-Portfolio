@@ -74,11 +74,12 @@ export default function Footer() {
           style={{ width: "100%", height: "auto" }}
         />
 
-        {/* "Hi, there!" speech bubble above Deadpool's head (he lounges with
-            his head at the left). Clean comic bubble with a real tail + a
-            little wave; pops in ~1.2s after he scrolls into view. */}
+        {/* "Hi, there!" speech bubble above Deadpool's head — a playful
+            two-line feedback CTA. He greets you, then invites feedback;
+            tapping it opens the modal. The footer's Give Feedback button
+            stays the accessible/keyboard path, so this stays aria-hidden. */}
         <motion.div
-          className="absolute left-[2%] top-[-18%] md:left-[5%]"
+          className="absolute left-[2%] top-[-30%] md:left-[5%]"
           style={{ transformOrigin: "bottom left" }}
           initial={reduceMotion ? { opacity: 0 } : { opacity: 0, scale: 0.5, y: 12 }}
           whileInView={{ opacity: 1, scale: 1, y: 0 }}
@@ -94,20 +95,34 @@ export default function Footer() {
             <div aria-hidden className="pointer-events-none absolute -inset-1.5 rounded-2xl bg-red-500/25 blur-lg" />
             {/* tail — a rotated square poking down toward Deadpool's head */}
             <div aria-hidden className="absolute -bottom-1 left-5 h-4 w-4 rotate-45 rounded-[3px] bg-white" />
-            <div className="relative flex items-center gap-1.5 rounded-2xl bg-white px-4 py-2 shadow-[0_14px_40px_-6px_rgba(0,0,0,0.6)]">
-              <span className="whitespace-nowrap text-[15px] font-extrabold tracking-tight text-zinc-900">
+            <motion.button
+              type="button"
+              aria-hidden
+              tabIndex={-1}
+              onClick={() => setIsFeedbackOpen(true)}
+              whileHover={{ scale: 1.03 }}
+              whileTap={{ scale: 0.95 }}
+              className="group pointer-events-auto relative flex flex-col items-start gap-0.5 rounded-2xl bg-white px-4 py-2.5 text-left shadow-[0_14px_40px_-6px_rgba(0,0,0,0.55)] transition-shadow duration-300 hover:shadow-[0_16px_44px_-4px_rgba(220,38,38,0.45)]"
+            >
+              <span className="flex items-center gap-1.5 whitespace-nowrap text-[15px] font-extrabold leading-tight tracking-tight text-zinc-900">
                 Hi, there!
+                <motion.span
+                  aria-hidden
+                  className="inline-block leading-none"
+                  style={{ transformOrigin: "75% 85%" }}
+                  animate={reduceMotion ? undefined : { rotate: [0, 16, -8, 16, 0] }}
+                  transition={{ duration: 1.5, repeat: Infinity, repeatDelay: 1.6, ease: "easeInOut" }}
+                >
+                  👋
+                </motion.span>
               </span>
-              <motion.span
-                aria-hidden
-                className="text-[15px] leading-none"
-                style={{ transformOrigin: "75% 85%" }}
-                animate={reduceMotion ? undefined : { rotate: [0, 16, -8, 16, 0] }}
-                transition={{ duration: 1.5, repeat: Infinity, repeatDelay: 1.6, ease: "easeInOut" }}
-              >
-                👋
-              </motion.span>
-            </div>
+              <span className="flex items-center gap-1 whitespace-nowrap text-[12px] font-bold leading-tight text-red-600">
+                Leave a feedback
+                <span aria-hidden className="transition-transform duration-300 group-hover:translate-x-1">
+                  &rarr;
+                </span>
+              </span>
+            </motion.button>
           </motion.div>
         </motion.div>
       </motion.div>

@@ -12,6 +12,7 @@ import {
   Package,
   List,
   ArrowUp,
+  ArrowRight,
   Zap,
 } from "lucide-react";
 import Link from "next/link";
@@ -300,10 +301,13 @@ export default function Home() {
                 variants={itemVariants}
                 className="text-[15px] leading-[1.65] text-gray-300 md:max-w-md md:text-lg md:leading-[1.8]"
               >
-                Aspiring AI Engineer building highly optimized agentic systems
-                and full-stack applications. Passionate about pushing the
-                boundaries of what&apos;s possible with modern AI and software
-                engineering.
+                I build full-stack applications end to end — React, Next.js,
+                and TypeScript up front, with Python, Prisma, and Postgres
+                behind them. My focus is agentic AI: shipping real LLM pipelines
+                like ArchAgent, a multi-stage Google Gemini system that turns a
+                text brief into 3D renders and costed estimates. I care about
+                systems that are fast, correct, and actually reach production —
+                not demos.
               </motion.p>
 
               {/* Action Buttons — Sharp rectangles */}
@@ -316,71 +320,54 @@ export default function Home() {
                 <motion.button
                   id="btn-resume"
                   onClick={() => setResumeOpen(true)}
-                  whileHover={{ y: -2, scale: 1.02 }}
+                  whileHover={{ y: -2 }}
                   whileTap={{ scale: 0.95 }}
-                  className="group relative flex cursor-pointer items-center gap-2.5 overflow-hidden rounded-xl border border-red-500/40 bg-red-600/15 px-6 py-3.5 text-sm font-semibold text-white backdrop-blur-xl transition-colors duration-300 hover:border-red-500/70 hover:bg-red-600/25 md:px-10 md:py-4"
+                  className="group flex cursor-pointer items-center gap-2.5 rounded-xl border border-red-500/40 bg-red-600/10 px-6 py-3.5 text-sm font-semibold text-white backdrop-blur-xl transition-all duration-300 ease-out hover:border-red-500/70 hover:bg-red-600/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500/50 md:px-10 md:py-4"
                 >
-                  {/* glow layer — opacity-only reveal, tinted by the active hero */}
-                  <span
-                    aria-hidden
-                    className="pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-300 group-hover:opacity-100"
-                    style={{ boxShadow: `0 0 24px ${accent}73, inset 0 0 12px ${accent}26` }}
-                  />
-                  <FileText size={16} strokeWidth={1.5} className="relative z-10 text-red-400" />
-                  <span className="relative z-10">View Resume</span>
+                  <FileText size={16} strokeWidth={1.5} className="text-red-400 transition-transform duration-300 group-hover:scale-110" />
+                  <span>View Resume</span>
                 </motion.button>
                 {/* Secondary — neutral glass */}
                 <Link href="/details">
                   <motion.button
                     id="btn-details"
-                    whileHover={{ y: -2, scale: 1.02 }}
+                    whileHover={{ y: -2 }}
                     whileTap={{ scale: 0.95 }}
-                    className="group relative flex cursor-pointer items-center gap-2.5 overflow-hidden rounded-xl border border-white/10 bg-white/5 px-6 py-3.5 text-sm font-semibold text-white/80 backdrop-blur-xl transition-colors duration-300 hover:border-white/25 hover:bg-white/10 hover:text-white md:px-10 md:py-4"
+                    className="group flex cursor-pointer items-center gap-2.5 rounded-xl border border-white/10 bg-white/5 px-6 py-3.5 text-sm font-semibold text-white/80 backdrop-blur-xl transition-all duration-300 ease-out hover:border-white/25 hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/30 md:px-10 md:py-4"
                   >
-                    <span
-                      aria-hidden
-                      className="pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-300 group-hover:opacity-100"
-                      style={{ boxShadow: "0 0 20px rgba(255,255,255,0.12)" }}
-                    />
-                    <Info size={16} strokeWidth={1.5} className="relative z-10" />
-                    <span className="relative z-10">View Details</span>
+                    <Info size={16} strokeWidth={1.5} className="transition-transform duration-300 group-hover:scale-110" />
+                    <span>View Details</span>
                   </motion.button>
                 </Link>
               </motion.div>
 
-              {/* AI Assistant Button — Full-width rectangle */}
+              {/* AI Assistant — enterprise-style dark glass widget */}
               <motion.div variants={itemVariants} className="max-w-md">
                 <motion.button
                   id="btn-ai"
                   onClick={() => setAiTeased(true)}
-                  whileHover={{ scale: 1.02, boxShadow: `0 0 25px ${accent}80` }}
+                  whileHover={{ y: -2 }}
                   whileTap={{ scale: 0.95 }}
-                  className="glow-pulse relative flex w-full cursor-pointer flex-col items-start gap-1 overflow-hidden border px-8 py-5 transition-all duration-300"
-                  style={{
-                    borderColor: `${accent}4d`,
-                    background:
-                      "linear-gradient(135deg, rgba(220,38,38,0.1) 0%, rgba(127,29,29,0.15) 50%, rgba(220,38,38,0.08) 100%)",
-                    boxShadow: `0 0 10px ${accent}4d`,
-                    transition: "border-color 0.6s ease, box-shadow 0.6s ease",
-                  }}
+                  className="group relative flex w-full cursor-pointer items-center gap-4 overflow-hidden rounded-xl border border-white/10 bg-zinc-950/50 px-5 py-4 text-left backdrop-blur-xl transition-all duration-300 ease-out hover:border-red-500/40 hover:bg-zinc-900/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500/50"
                 >
-                  {/* Shimmer overlay */}
-                  <div
-                    className="pointer-events-none absolute inset-0"
-                    style={{
-                      background:
-                        "linear-gradient(105deg, transparent 40%, rgba(255,255,255,0.04) 50%, transparent 60%)",
-                      backgroundSize: "200% 100%",
-                      animation: "shimmer 3s ease-in-out infinite",
-                    }}
+                  {/* single sheen sweep on hover — transform-only, no infinite loop */}
+                  <span
+                    aria-hidden
+                    className="pointer-events-none absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/[0.07] to-transparent transition-transform duration-[900ms] ease-out group-hover:translate-x-full"
                   />
-                  <span className="relative z-10 flex items-center gap-2.5 text-xl font-bold text-white">
-                    <Sparkles size={20} strokeWidth={2} className="text-red-400" />
-                    ASK AI ABT ME
+                  <span className="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-red-500/30 bg-red-500/10 text-red-400 transition-colors duration-300 group-hover:border-red-500/50">
+                    <Sparkles size={20} strokeWidth={2} />
                   </span>
-                  <span className="relative z-10 text-xs font-medium text-white/50">
-                    {aiTeased ? "Coming soon — training in progress" : "Srinivas' personalized AI assistant"}
+                  <span className="relative flex flex-1 flex-col">
+                    <span className="text-sm font-bold uppercase tracking-wider text-white">ASK AI ABT ME</span>
+                    <span className="text-xs font-medium text-white/50">
+                      {aiTeased ? "Coming soon — training in progress" : "Srinivas' personalized AI assistant"}
+                    </span>
                   </span>
+                  <ArrowRight
+                    size={16}
+                    className="relative shrink-0 text-white/30 transition-all duration-300 group-hover:translate-x-0.5 group-hover:text-red-400"
+                  />
                 </motion.button>
               </motion.div>
             </motion.div>
