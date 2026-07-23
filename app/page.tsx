@@ -19,6 +19,7 @@ import Link from "next/link";
 import CaseOpening from "@/src/components/CaseOpening";
 import DocumentModal from "@/src/components/modals/DocumentModal";
 import HeroShowcase, { useHeroRotation } from "@/src/components/HeroShowcase";
+import { GradientTracing } from "@/src/components/ui/gradient-tracing";
 import { HEROES } from "@/lib/hero-showcase";
 import { useScrollStore } from "@/src/contexts/ScrollStore";
 
@@ -77,8 +78,14 @@ export default function Home() {
       img.src = HEROES[0].character; // Spider-Man opens the showcase
     });
     const fontsReady: Promise<unknown> = document.fonts?.ready ?? Promise.resolve();
+    // Floor the display time so the arc-reactor boot actually plays and feels
+    // deliberate — otherwise cached assets dismiss it in ~100ms and no one
+    // sees it. Reduced motion skips the floor. The 4s cap still fails open.
+    const minTime = reduceMotion
+      ? Promise.resolve()
+      : new Promise<void>((resolve) => setTimeout(resolve, 1800));
     const cap = new Promise<void>((resolve) => setTimeout(resolve, 4000));
-    Promise.race([Promise.all([entryLoaded, fontsReady]), cap]).then(() => {
+    Promise.race([Promise.all([entryLoaded, fontsReady, minTime]), cap]).then(() => {
       if (cancelled) return;
       sessionStorage.setItem("first-load-done", "1");
       setLoaderState("leaving");
@@ -86,7 +93,7 @@ export default function Home() {
     return () => {
       cancelled = true;
     };
-  }, [loaderState]);
+  }, [loaderState, reduceMotion]);
 
   // Owns the leaving→done transition (a separate effect: the state change
   // re-runs the effect above, whose cleanup would cancel an inner timer).
@@ -167,6 +174,37 @@ export default function Home() {
             animate={{ scaleY: 1 }}
             transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1] }}
           />
+          {/* Arc-reactor boot ring — gold/red energy tracing that powers up
+              behind the SRC wordmark (the wordmark sits in the core, Iron-Man
+              chest style). Structural rings stay for reduced motion; only the
+              looping energy trace is gated off. */}
+          <motion.div
+            className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2"
+            initial={reduceMotion ? false : { opacity: 0, scale: 0.7 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: reduceMotion ? 0 : 0.35, duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
+          >
+            <div className="relative" style={{ width: 260, height: 260 }}>
+              <div
+                className="absolute inset-10 rounded-full"
+                style={{ background: "radial-gradient(circle, rgba(220,38,38,0.18), transparent 70%)" }}
+              />
+              <div className="absolute inset-0 rounded-full border border-red-500/15" />
+              <div className="absolute inset-[26px] rounded-full border border-yellow-500/10" />
+              {!reduceMotion && (
+                <div className="absolute inset-0">
+                  <GradientTracing
+                    width={260}
+                    height={260}
+                    strokeWidth={2}
+                    path="M130,18 a112,112 0 1,1 0,224 a112,112 0 1,1 0,-224"
+                    gradientColors={["#F1C40F", "#DC2626", "#F1C40F"]}
+                    animationDuration={1.6}
+                  />
+                </div>
+              )}
+            </div>
+          </motion.div>
           {/* SRC wordmark — same composition as the navbar trigger */}
           <motion.div
             className="relative flex items-center justify-center"
