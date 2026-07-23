@@ -59,7 +59,7 @@ export default function Footer() {
           the scroll-in is a soft rise + settle, transform/opacity only. */}
       <motion.div
         aria-hidden
-        className="pointer-events-none absolute bottom-full left-1/2 z-10 w-[min(78vw,760px)] -translate-x-1/2"
+        className="pointer-events-none absolute bottom-[calc(100%_-_44px)] left-1/2 z-10 w-[min(78vw,760px)] -translate-x-1/2 md:bottom-full"
         initial={reduceMotion ? false : { opacity: 0, y: 48 }}
         whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true, amount: 0.5 }}
