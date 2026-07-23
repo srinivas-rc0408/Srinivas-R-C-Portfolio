@@ -9,8 +9,10 @@ async function seedProjects() {
   const raw = readFileSync(join(process.cwd(), "content", "projects.md"), "utf-8");
   const projects = parseProjectsMd(raw);
 
+  const slugs: string[] = [];
   for (const [index, p] of projects.entries()) {
     const slug = slugify(p.title);
+    slugs.push(slug);
     const data = {
       title: p.title,
       shortInfo: p.shortInfo,
@@ -23,7 +25,11 @@ async function seedProjects() {
     await prisma.project.upsert({ where: { slug }, update: data, create: { slug, ...data } });
   }
 
-  console.log(`Seeded ${projects.length} projects.`);
+  // projects.md is the source of truth — drop any project it no longer lists
+  // (e.g. the original placeholder seed) so the DB mirrors the content file.
+  const pruned = await prisma.project.deleteMany({ where: { slug: { notIn: slugs } } });
+
+  console.log(`Seeded ${projects.length} projects${pruned.count ? `, pruned ${pruned.count} stale` : ""}.`);
 }
 
 async function seedDocument(type: "resume" | "cv", fileName: string) {
