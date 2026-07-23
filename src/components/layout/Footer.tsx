@@ -74,27 +74,41 @@ export default function Footer() {
           style={{ width: "100%", height: "auto" }}
         />
 
-        {/* "Hi, there!" thought cloud above Deadpool's head (he lounges with
-            his head at the left). Pops in ~1.2s after he scrolls into view. */}
+        {/* "Hi, there!" speech bubble above Deadpool's head (he lounges with
+            his head at the left). Clean comic bubble with a real tail + a
+            little wave; pops in ~1.2s after he scrolls into view. */}
         <motion.div
-          className="absolute left-[3%] top-[-14%] md:left-[6%]"
+          className="absolute left-[2%] top-[-18%] md:left-[5%]"
           style={{ transformOrigin: "bottom left" }}
-          initial={reduceMotion ? { opacity: 0 } : { opacity: 0, scale: 0.5, y: 10 }}
+          initial={reduceMotion ? { opacity: 0 } : { opacity: 0, scale: 0.5, y: 12 }}
           whileInView={{ opacity: 1, scale: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ delay: 1.2, type: "spring", stiffness: 280, damping: 18 }}
         >
-          <div className="relative rounded-2xl bg-white px-3.5 py-1.5 shadow-[0_10px_35px_rgba(0,0,0,0.45)]">
-            <span
-              className="whitespace-nowrap text-[13px] font-bold text-zinc-900"
-              style={{ fontFamily: "'Comic Sans MS', 'Segoe UI', sans-serif" }}
-            >
-              Hi, there!
-            </span>
-            {/* thought trail pointing down toward Deadpool's head */}
-            <div className="absolute -bottom-2 left-3 h-2 w-2 rounded-full bg-white" />
-            <div className="absolute -bottom-4 left-1 h-1.5 w-1.5 rounded-full bg-white" />
-          </div>
+          <motion.div
+            className="relative"
+            animate={reduceMotion ? undefined : { y: [0, -3, 0] }}
+            transition={{ duration: 3.2, repeat: Infinity, ease: "easeInOut" }}
+          >
+            {/* soft brand glow behind the bubble */}
+            <div aria-hidden className="pointer-events-none absolute -inset-1.5 rounded-2xl bg-red-500/25 blur-lg" />
+            {/* tail — a rotated square poking down toward Deadpool's head */}
+            <div aria-hidden className="absolute -bottom-1 left-5 h-4 w-4 rotate-45 rounded-[3px] bg-white" />
+            <div className="relative flex items-center gap-1.5 rounded-2xl bg-white px-4 py-2 shadow-[0_14px_40px_-6px_rgba(0,0,0,0.6)]">
+              <span className="whitespace-nowrap text-[15px] font-extrabold tracking-tight text-zinc-900">
+                Hi, there!
+              </span>
+              <motion.span
+                aria-hidden
+                className="text-[15px] leading-none"
+                style={{ transformOrigin: "75% 85%" }}
+                animate={reduceMotion ? undefined : { rotate: [0, 16, -8, 16, 0] }}
+                transition={{ duration: 1.5, repeat: Infinity, repeatDelay: 1.6, ease: "easeInOut" }}
+              >
+                👋
+              </motion.span>
+            </div>
+          </motion.div>
         </motion.div>
       </motion.div>
 

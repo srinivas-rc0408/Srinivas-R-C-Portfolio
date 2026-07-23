@@ -175,6 +175,11 @@ export default function HeroShowcase({ hero, isStatic, live }: HeroShowcaseProps
                 transform: `translate(${active.charOffsetX}, ${active.charOffsetY}) scale(${active.charScale})`,
                 transformOrigin: "right bottom",
                 willChange: "transform",
+                // Soft dissolve at the feet: without it the character's lower
+                // body is razor-cut at the hero/section seam on scroll, reading
+                // as amputated legs. The fade grounds it in the dark instead.
+                WebkitMaskImage: "linear-gradient(to bottom, #000 84%, transparent 99%)",
+                maskImage: "linear-gradient(to bottom, #000 84%, transparent 99%)",
               }}
             />
           </motion.div>

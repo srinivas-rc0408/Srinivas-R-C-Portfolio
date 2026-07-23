@@ -109,11 +109,14 @@ export default function FeedbackModal({ isOpen, onClose }: FeedbackModalProps) {
             ) : (
               <>
                 <div className="mb-6 flex flex-col items-center">
-                  <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-red-500/10 border border-red-500/20 text-red-500">
-                    <MessageSquare size={20} />
+                  <div className="relative mb-4">
+                    <div aria-hidden className="absolute inset-0 rounded-full bg-red-500/40 blur-md" />
+                    <div className="relative flex h-12 w-12 items-center justify-center rounded-full border border-red-500/30 bg-red-500/10 text-red-500">
+                      <MessageSquare size={20} />
+                    </div>
                   </div>
-                  <h2 className="text-xl font-bold tracking-widest text-white uppercase">Feedback</h2>
-                  <p className="text-xs text-zinc-400 mt-1">Tell Srinivas what you think.</p>
+                  <h2 className="text-xl font-bold uppercase tracking-widest text-white">Feedback</h2>
+                  <p className="mt-1 text-xs text-zinc-400">Tell Srinivas what you think.</p>
                 </div>
 
                 <form onSubmit={handleSubmit} className="flex flex-col gap-4">
