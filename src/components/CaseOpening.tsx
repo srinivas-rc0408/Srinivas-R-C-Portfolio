@@ -434,7 +434,10 @@ export default function CaseOpening({ isOpen, onClose, onOpenDocument }: CaseOpe
                 )}
               </div>
 
-              <div className="relative p-8">
+              {/* grid stack — every phase panel occupies the same cell so the
+                  outgoing and incoming panels overlap instead of pushing each
+                  other down in flow (that reflow was the reveal "drop then rise"). */}
+              <div className="relative grid p-8">
                 {/* mode="sync" (default) — the outgoing phase's exit and the
                     incoming phase's enter run concurrently, so the 350ms
                     stillness beat before REVEAL isn't followed by an extra
@@ -443,6 +446,7 @@ export default function CaseOpening({ isOpen, onClose, onOpenDocument }: CaseOpe
                   {(phase === "IDLE" || phase === "OPENING") && (
                     <motion.div
                       key="idle"
+                      style={{ gridArea: "1 / 1" }}
                       className="flex flex-col items-center gap-4"
                       initial={{ opacity: 0, y: 12 }}
                       animate={{ opacity: 1, y: 0 }}
@@ -677,7 +681,8 @@ export default function CaseOpening({ isOpen, onClose, onOpenDocument }: CaseOpe
                   {phase === "SPINNING" && !reducedMotion && (
                     <motion.div
                       key="spinning"
-                      className="flex flex-col items-center gap-5"
+                      style={{ gridArea: "1 / 1" }}
+                      className="flex flex-col items-center gap-5 self-center"
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 1 }}
                       exit={{ opacity: 0 }}
@@ -719,7 +724,8 @@ export default function CaseOpening({ isOpen, onClose, onOpenDocument }: CaseOpe
                   {phase === "REVEAL" && winner && rarity && (
                     <motion.div
                       key="reveal"
-                      className="flex flex-col items-center gap-8 py-4"
+                      style={{ gridArea: "1 / 1" }}
+                      className="flex flex-col items-center gap-8 self-center py-4"
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 1 }}
                       exit={{ opacity: 0 }}
