@@ -62,7 +62,12 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
   }
 
   try {
-    const sourceRes = await fetch(source.fileUrl);
+    // Same-origin files (hosted in /public) are stored as root-relative paths;
+    // server-side fetch needs an absolute URL, so resolve against this request.
+    const absoluteUrl = source.fileUrl.startsWith("/")
+      ? new URL(source.fileUrl, request.nextUrl.origin).toString()
+      : source.fileUrl;
+    const sourceRes = await fetch(absoluteUrl);
     if (!sourceRes.ok) throw new Error(`Failed to fetch source file (${sourceRes.status}).`);
     const sourceBytes = await sourceRes.arrayBuffer();
 
