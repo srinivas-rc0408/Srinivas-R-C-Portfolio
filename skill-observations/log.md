@@ -81,3 +81,82 @@ DECLINED = user decided not to pursue
 **Suggested improvement:** When verifying a regenerated static asset, verify at the bytes level first (fetch with cache:'reload' and decode/sample pixels), and force the DOM element to repaint with a cache-busting query param. Screenshot only after that. Don't infer staleness from response size without an old-size baseline.
 
 **Principle:** Asset verification has three cache layers (server, optimizer, browser element); prove which layer serves stale content before purging any of them — and a "same output" signal is only meaningful against a recorded baseline.
+
+### Observation 6: Idle game entities die before a visual can be captured
+
+**Date:** 2026-07-09
+**Session context:** Verifying nitro flames / drift smoke in Phaser games via the preview harness
+**Skill:** verify (system skill — route to complementary skill if actioned)
+**Type:** open-source
+**Phase/Area:** Browser verification of live/auto-advancing games
+
+**Issue:** Repeatedly tried to screenshot a game effect (drift smoke, nitro flames) but the player entity kept dying while idle (a hazard reached the stationary player), so screenshots caught the death overlay instead of the effect. Wasted several cycles. State inspection via a dev scene hook (reading emitter.emitting, energy drain, positions) proved the mechanic worked far more reliably than screenshots.
+
+**Suggested improvement:** For continuously-advancing games, prefer asserting on engine state through a dev-only scene hook (window.__scene = this in dev) over screenshots for mechanics that require the player to survive. Reserve screenshots for static/menu states, or first freeze the world (pause hazards / set invuln) before capturing.
+
+**Principle:** When the system under test advances on its own clock, snapshot tools race the simulation; instrument the state instead of racing it, or halt the clock before observing.
+
+### Observation 7: DOM-snapshot mirrors of React/Next.js sites cannot rehydrate
+
+**Status:** OPEN
+**Date:** 2026-07-10
+**Session context:** Previewing an offline mirror of a Next.js terminal-portfolio site; all buttons/inputs were dead despite zero console errors and all assets returning 200.
+**Skill:** New skill candidate: offline-site-repair (or fold into a debugging skill)
+**Type:** open-source
+**Phase/Area:** Diagnosis of dead interactivity in saved/mirrored SPA pages
+
+**Issue:** An offline mirror saved the post-hydration DOM snapshot (telltale: `<next-route-announcer>` in the HTML) instead of the raw server HTML. React silently suspends and never hydrates — no errors, no failed requests, making it look like nothing is wrong. Diagnostic chain that worked: check for React fiber keys on elements → check `__next_f` queue consumed vs. `window.next` absent → spot post-hydration artifacts in saved HTML → curl the live site's raw HTML and diff flight payloads (they were identical) → replace index.html with raw server HTML → full interactivity restored.
+
+**Suggested improvement:** Capture as a checklist: (1) dead SPA + zero errors + all 200s ⇒ suspect hydration never ran; (2) grep saved HTML for post-hydration artifacts (next-route-announcer, mutated app state baked into markup); (3) fix = fetch raw server HTML (curl, no JS) and keep the mirrored static assets.
+
+**Principle:** "Save Page As"-style mirrors of client-rendered apps capture the rendered output, not the bootable input. When hydration data (RSC flight payload) and chunks are intact, swapping in the raw server HTML is a one-file fix — no need to reconstruct the app.
+
+### Observation 8: White-labeling a scraped site — find the source repo first, and 3D assets carry identity too
+
+**Status:** OPEN
+**Date:** 2026-07-10
+**Session context:** White-labeling a terminal-portfolio site the user had only as a scraped static mirror (minified bundles, no server code).
+**Skill:** New skill candidate: offline-site-repair (extends obs #7)
+**Type:** open-source
+**Phase/Area:** Codebase discovery before content replacement
+
+**Issue:** The user believed they had "cloned a repository" but actually had a production-build mirror. Editing minified chunks would have been fragile and the API route (server code) was unrecoverable from the mirror. A 30-second GitHub API search on the original author's username found the real MIT-licensed source repo, making the whole task tractable. Separately: after replacing every text occurrence, the author's face/name still shipped in a GLB 3D model's embedded PNG texture — grep can't see identity data inside binary assets. Fixed by parsing the GLB (12-byte header + JSON chunk + BIN chunk), regenerating the texture with ImageMagick at identical dimensions/layout, and repacking all bufferViews with 4-byte alignment.
+
+**Suggested improvement:** White-label checklist: (1) verify the artifact is source, not a build — if a build, search GitHub for the author's source repo and check its license before editing anything; (2) after text replacement, audit binary assets (GLB/GLTF textures, images, favicons, OG images, PWA manifest icons) for baked-in identity; (3) grep for the author across metadata layers separately: JSON-LD, OpenGraph, twitter cards, rss, llms.txt, manifest, robots — they duplicate the same identity in ~8 places.
+
+**Principle:** Identity lives in three layers — text, metadata, and binary assets — and each needs its own sweep. And when handed a derived artifact (build output, mirror, export), the first move is locating the upstream source; an hour of clever patching loses to a minute of provenance hunting.
+
+### Observation 9: Attached-file references don't always resolve at their literal path — check Trash and sibling repos
+
+**Status:** OPEN
+**Date:** 2026-07-11
+**Session context:** User attached "@/home/superior/Downloads/SRINIVAS RC Resume.pdf" and said "I uploaded the profile img to the public folder." Neither was at the stated path: the resume had been moved to ~/.local/share/Trash/files/, and an earlier profile.jpg the user "uploaded" landed in the wrong repo (srinivas-portfolio/public instead of the actual project at Downloads/.../portfolio.sh/public).
+
+**Suggested improvement:** When a referenced attachment isn't at its literal path, before asking the user, run a fallback search: (1) `find` the basename across ~/Downloads, ~/Desktop, ~/Documents; (2) check ~/.local/share/Trash/files/; (3) check sibling/parallel repos when the project has a same-named twin. Recover from Trash with a copy (not move) so the original stays. Only ask the user if all fallbacks miss.
+
+**Principle:** A user's mental model of "where I put the file" is often wrong (trashed, downloaded-but-not-moved, saved to a look-alike directory). A 3-location mechanical search resolves most of these silently and beats a round-trip question.
+
+### Observation 10: Global re-theme of a hardcoded-color codebase — script the sed, preserve semantic exceptions
+
+**Status:** OPEN
+**Date:** 2026-07-11
+**Session context:** "Eradicate matrix green, replace with cyber blue" across a codebase that hardcodes Tailwind color classes (green-400 etc.) and hex values everywhere instead of CSS variables — ~17 files, 350+ occurrences.
+
+**Suggested improvement:** For a global color swap with no theme tokens: (1) write ONE python/sed pass with an explicit old→new map for both Tailwind classes (green-400→cyan-400, green-800→cyan-800…) and raw hex/rgba; (2) enumerate SEMANTIC exceptions that must NOT change — traffic-light window dots (red/yellow/green), error-state reds, brand/flag colors — and restore them after the blanket pass; (3) finish with a grep sweep for stragglers (green-100/200, inline style hex, rgba tuples the class-map missed). Verify computed colors in-browser (getComputedStyle returns lab()/rgb, so assert on distinct values, not names).
+
+**Principle:** A codebase without design tokens makes re-theming a search-and-replace problem, not a config change. The reliable pattern is blanket-map → restore-semantic-exceptions → grep-for-stragglers, because the danger isn't the 350 mechanical swaps — it's the 3 colors that carried meaning (status, brand) and should have survived.
+
+### Observation 11: AnimatePresence mode="sync" reflow — reveal panel drops then rises
+
+**Status:** OPEN
+**Date:** 2026-07-23
+**Session context:** Portfolio Loot Vault (CS2-style case opening). User reported "after opening the case it goes down and then comes up to the right position."
+**Skill:** verify / frontend-design (motion)
+**Type:** open-source
+**Phase/Area:** Diagnosing layout shift in multi-phase animated UI
+
+**Issue:** Three phase panels (idle/spinning/reveal) rendered as normal-flow siblings inside one AnimatePresence with the default mode="sync". During the SPINNING→REVEAL crossfade both panels are mounted simultaneously; the entering reveal card sat BELOW the still-exiting roulette strip in flow, then jumped up when the strip unmounted — read by the user as "drops then rises." Verified the fix by sampling the reveal card's getBoundingClientRect().top every frame via rAF for 9s: after the fix, top was stable at 316px across all 316 samples (range 0).
+
+**Suggested improvement:** When AnimatePresence must keep mode="sync" (to avoid the blank gap of mode="wait"), stack the presence children in a single CSS grid cell (`display:grid` on the wrapper, `grid-area:1/1` on each child, plus `self-center`) so the outgoing and incoming panels OVERLAP instead of stacking in flow. Absolute positioning also overlaps but collapses the wrapper to 0 height; grid keeps the wrapper sized to the tallest child.
+
+**Principle:** A visible "jump to final position" at the end of a transition is usually a flow-reflow artifact, not an animation-curve problem — two presence siblings coexisting in normal flow push each other. Overlapping them in one grid cell removes the reflow without changing the crossfade. And per-frame rAF sampling of a bounding rect is the reliable way to prove a position is stable, since a single screenshot can't distinguish "never moved" from "already settled."

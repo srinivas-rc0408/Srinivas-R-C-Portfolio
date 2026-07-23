@@ -5,6 +5,19 @@
       "name": "dev",
       "runtimeExecutable": "npm",
       "runtimeArgs": ["run", "dev"],
+      "port": 3000,
+      "autoPort": true
+    },
+    {
+      "name": "anuppradhan",
+      "runtimeExecutable": "python3",
+      "runtimeArgs": ["-m", "http.server", "8899", "-d", "/home/superior/Downloads/anuppradhan-in-full-site-offline/www.anuppradhan.in"],
+      "port": 8899
+    },
+    {
+      "name": "chandrashekar-portfolio",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev", "--prefix", "/home/superior/Downloads/anuppradhan-in-full-site-offline/portfolio.sh"],
       "port": 3000
     }
   ]
