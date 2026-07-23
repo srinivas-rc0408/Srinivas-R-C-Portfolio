@@ -160,3 +160,18 @@ DECLINED = user decided not to pursue
 **Suggested improvement:** When AnimatePresence must keep mode="sync" (to avoid the blank gap of mode="wait"), stack the presence children in a single CSS grid cell (`display:grid` on the wrapper, `grid-area:1/1` on each child, plus `self-center`) so the outgoing and incoming panels OVERLAP instead of stacking in flow. Absolute positioning also overlaps but collapses the wrapper to 0 height; grid keeps the wrapper sized to the tallest child.
 
 **Principle:** A visible "jump to final position" at the end of a transition is usually a flow-reflow artifact, not an animation-curve problem — two presence siblings coexisting in normal flow push each other. Overlapping them in one grid cell removes the reflow without changing the crossfade. And per-frame rAF sampling of a bounding rect is the reliable way to prove a position is stable, since a single screenshot can't distinguish "never moved" from "already settled."
+
+### Observation 12: "Make it pro" QA — the highest-impact finding was placeholder CONTENT, not code
+
+**Status:** OPEN
+**Date:** 2026-07-23
+**Session context:** Owner asked for a from-scratch QA pass — "make everything buttery smooth, buttons/animations pro." Portfolio was functionally clean (all routes 200, no errors, responsive, consistent motion.button+whileTap).
+**Skill:** verify / impeccable
+**Type:** open-source
+**Phase/Area:** Prioritising a broad "polish everything" request
+
+**Issue:** The instinct on a "make it pro" request is to tweak animations/buttons. But the app's buttons/animations were already consistent and on-brand; manufacturing changes would have risked regressions (reinvention = slop). The single highest-impact issue was that the live Projects page still shipped PLACEHOLDER content (content/projects.md literally said "[PLACEHOLDER]"). Separately, the content-sourced seed upserted-by-slug without pruning, so replacing the content file would have left the 4 stale placeholder rows alongside the 3 real ones (7 total). Fixed by adding a prune (deleteMany where slug notIn currentSlugs) so the DB mirrors the source file.
+
+**Suggested improvement:** On a broad "polish/make it pro" request, run a content-vs-chrome triage FIRST: grep the repo/DB for placeholder/lorem/TODO content before touching styling — shipping filler on a portfolio outweighs any micro-animation. And any seed that treats a content file as source-of-truth must prune rows absent from the file, not just upsert; upsert-only silently accumulates stale records across content edits.
+
+**Principle:** "Make it look pro" is often satisfied by fixing what the interface SAYS, not how it animates. Verify the content is real before polishing the chrome. And "sync from a source file" means upsert + prune — an upsert-only sync is a one-way accumulator that drifts from its source.
