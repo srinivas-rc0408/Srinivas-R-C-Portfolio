@@ -175,3 +175,18 @@ DECLINED = user decided not to pursue
 **Suggested improvement:** On a broad "polish/make it pro" request, run a content-vs-chrome triage FIRST: grep the repo/DB for placeholder/lorem/TODO content before touching styling — shipping filler on a portfolio outweighs any micro-animation. And any seed that treats a content file as source-of-truth must prune rows absent from the file, not just upsert; upsert-only silently accumulates stale records across content edits.
 
 **Principle:** "Make it look pro" is often satisfied by fixing what the interface SAYS, not how it animates. Verify the content is real before polishing the chrome. And "sync from a source file" means upsert + prune — an upsert-only sync is a one-way accumulator that drifts from its source.
+
+### Observation 13: A "wow" entry animation needs a display floor, or cached loads flash it in ~100ms
+
+**Status:** OPEN
+**Date:** 2026-07-24
+**Session context:** Added an Arc-Reactor boot animation to an existing first-load screen that dismissed the instant critical assets (image + fonts) resolved.
+**Skill:** verify / frontend-design (motion)
+**Type:** open-source
+**Phase/Area:** Building + verifying intro/loader animations
+
+**Issue:** On localhost (cached assets) the loader dismissed in ~100ms, so the new boot animation was never actually seen — and was impossible to screenshot. Two compounding traps: (1) the feature is pointless without a minimum display time, and (2) screenshot latency (~1s) meant even a correctly-timed sleep landed after a sub-second loader had gone. Fix: add a display floor (min 1.8s, gated off for reduced motion) raced under the existing fail-open cap. For verification, an escape hatch (sessionStorage flag that suppresses auto-dismiss) held the loader open so it could be captured deterministically regardless of latency. Also hit stale-bundle confusion: HMR/dev-server served pre-edit code across reloads until a full server restart.
+
+**Suggested improvement:** When building an intro/boot animation gated on asset readiness, always add a minimum-display floor (~1.5-2.5s) under the fail-open cap, and skip it for prefers-reduced-motion. To verify time-boxed UI, add a temporary hold flag (sessionStorage-keyed so it survives navigation) rather than fighting screenshot latency; remove it before shipping. When dev changes "don't seem to apply," suspect a stale compiled bundle and restart the server before debugging logic.
+
+**Principle:** An animation that plays faster than it can be perceived is a non-feature — readiness-gated intros need a perceptual floor, not just a ceiling. And verification tooling has its own latency; for sub-second UI, make the state hold still (a deterministic hold hook) instead of trying to catch it mid-flight.
