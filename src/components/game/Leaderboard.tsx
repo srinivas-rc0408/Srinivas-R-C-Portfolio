@@ -70,7 +70,7 @@ export default function Leaderboard({ game, score, unit = "m" }: LeaderboardProp
             const isMe = row.name === name;
             return (
               <li
-                key={row.name}
+                key={`${row.name}-${i}`}
                 className={`flex items-center gap-2 rounded-md px-2 py-1 text-xs ${
                   isMe ? "bg-red-500/15 font-bold text-white" : "text-zinc-400"
                 }`}

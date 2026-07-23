@@ -29,9 +29,9 @@ interface VehicleStats {
 }
 
 const VEHICLE_STATS: Record<VehicleType, VehicleStats> = {
-  motorcycle: { accel: 900, maxSpeed: 520, turnRate: 220, friction: 0.94, size: [26, 14], color: 0xf59e0b, label: "Motorcycle", turningLabel: "Very Tight" },
-  car: { accel: 650, maxSpeed: 420, turnRate: 160, friction: 0.92, size: [36, 20], color: 0xdc2626, label: "Car", turningLabel: "Balanced" },
-  bus: { accel: 400, maxSpeed: 300, turnRate: 90, friction: 0.9, size: [54, 28], color: 0x3b82f6, label: "Bus", turningLabel: "Wide" },
+  motorcycle: { accel: 1000, maxSpeed: 560, turnRate: 240, friction: 0.95, size: [26, 14], color: 0xf59e0b, label: "Motorcycle", turningLabel: "Very Tight" },
+  car: { accel: 780, maxSpeed: 480, turnRate: 185, friction: 0.94, size: [36, 20], color: 0xdc2626, label: "Car", turningLabel: "Balanced" },
+  bus: { accel: 480, maxSpeed: 340, turnRate: 105, friction: 0.92, size: [54, 28], color: 0x3b82f6, label: "Bus", turningLabel: "Wide" },
 };
 
 interface BusStopDef {
@@ -263,8 +263,9 @@ export default function PortfolioGame() {
           }
         }
 
-        // Small obstacles — traffic cones scattered on the road corridors
-        // (never inside a building block, clear of spawn and bus stops).
+        // A light scatter of traffic cones — just enough to give the empty
+        // roads some texture and something to drift around, never enough to
+        // pen the player in. Kept clear of spawn, bus stops, and building blocks.
         this.obstacles = this.physics.add.staticGroup();
         const onRoad = (x: number, y: number) => {
           const lx = x % CELL;
@@ -272,12 +273,12 @@ export default function PortfolioGame() {
           return !(lx > 100 && lx < 300 && ly > 100 && ly < 300);
         };
         let placed = 0;
-        for (let tries = 0; placed < 64 && tries < 800; tries++) {
+        for (let tries = 0; placed < 10 && tries < 800; tries++) {
           const x = 120 + Math.random() * (WORLD_SIZE - 240);
           const y = 120 + Math.random() * (WORLD_SIZE - 240);
           if (!onRoad(x, y)) continue;
-          if (Phaser.Math.Distance.Between(x, y, 60, 60) < 220) continue;
-          if (BUS_STOPS.some((s) => Phaser.Math.Distance.Between(x, y, s.x, s.y) < 90)) continue;
+          if (Phaser.Math.Distance.Between(x, y, 60, 60) < 300) continue;
+          if (BUS_STOPS.some((s) => Phaser.Math.Distance.Between(x, y, s.x, s.y) < 140)) continue;
           const cone = this.obstacles.create(x, y, "cone") as Phaser.Physics.Arcade.Sprite;
           cone.setCircle(6, 2, 4);
           placed++;
@@ -395,14 +396,16 @@ export default function PortfolioGame() {
         const right = new Phaser.Math.Vector2(-forward.y, forward.x);
         let vF = body.velocity.dot(forward);
 
-        const drifting = throttle < 0 && vF > stats.maxSpeed * 0.3 && steer !== 0;
+        // Brake + steer above a modest speed breaks traction into a drift.
+        // The threshold is low so slides are easy to trigger and hold.
+        const drifting = throttle < 0 && vF > stats.maxSpeed * 0.22 && steer !== 0;
 
         if (steer !== 0) {
           // Steering scales with speed (no spinning in place), flips in reverse,
           // and bites harder mid-drift for the slide feel.
           const steerScale = Phaser.Math.Clamp(Math.abs(vF) / (stats.maxSpeed * 0.25), 0, 1);
           const reverse = vF < -20 ? -1 : 1;
-          const driftBoost = drifting ? 1.45 : 1;
+          const driftBoost = drifting ? 1.6 : 1;
           this.player.rotation +=
             Phaser.Math.DegToRad(stats.turnRate) * steer * steerScale * reverse * driftBoost * dt;
           forward.set(Math.cos(this.player.rotation), Math.sin(this.player.rotation));
@@ -417,7 +420,10 @@ export default function PortfolioGame() {
           vF *= Math.pow(stats.friction, dt * 60); // frame-rate independent coast
         }
 
-        const grip = drifting ? 1.6 : 9;
+        // Lateral grip: high when planted (car tracks its nose), low while
+        // drifting so the tail slides out and stays out longer. Slightly
+        // looser planted grip than before gives cornering a smoother feel.
+        const grip = drifting ? 1.3 : 7;
         vL *= Math.exp(-grip * dt);
 
         vF = Phaser.Math.Clamp(vF, -stats.maxSpeed * 0.4, stats.maxSpeed);
