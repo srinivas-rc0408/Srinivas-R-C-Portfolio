@@ -190,3 +190,18 @@ DECLINED = user decided not to pursue
 **Suggested improvement:** When building an intro/boot animation gated on asset readiness, always add a minimum-display floor (~1.5-2.5s) under the fail-open cap, and skip it for prefers-reduced-motion. To verify time-boxed UI, add a temporary hold flag (sessionStorage-keyed so it survives navigation) rather than fighting screenshot latency; remove it before shipping. When dev changes "don't seem to apply," suspect a stale compiled bundle and restart the server before debugging logic.
 
 **Principle:** An animation that plays faster than it can be perceived is a non-feature — readiness-gated intros need a perceptual floor, not just a ceiling. And verification tooling has its own latency; for sub-second UI, make the state hold still (a deterministic hold hook) instead of trying to catch it mid-flight.
+
+### Observation 14: "My deployment isn't showing changes" — verify the build ran before assuming a code/branch bug
+
+**Status:** OPEN
+**Date:** 2026-07-24
+**Session context:** User insisted their Vercel deployment wasn't loading their changes and asked to "push it so it deploys." The instinct is to suspect a wrong-branch config or a build failure.
+**Skill:** systematic-debugging / verify
+**Type:** open-source
+**Phase/Area:** Diagnosing "deployment not updating" complaints
+
+**Issue:** The deployment was actually fine. Two fast, authoritative checks settled it without any Vercel dashboard access: (1) WebFetch the live URL and diff a known-recent string (the rewritten hero copy) — it was present, proving the production branch was the working branch, not the stale donor `main`; (2) `gh api repos/OWNER/REPO/commits/SHA/status` and `.../deployments` showed every recent commit as state=success in the Production environment, and the just-pushed commit as "pending" (building). The real cause of "not loaded" was a once-per-session intro animation gated on sessionStorage — a normal revisit skips it, which reads as "my change didn't deploy."
+
+**Suggested improvement:** For any "deployment isn't updating" report, before touching code or branch config: (a) fetch the live URL and grep for a string only the new code has; (b) query the platform's commit-status / deployments API via gh to confirm the commit built and to which environment. Only if those show a real failure should you dig into build logs or branch settings. And remember sessionStorage/localStorage-gated one-time UI (intros, onboarding, cookie banners) looks "gone" on revisit — test it in a fresh/incognito context.
+
+**Principle:** "It didn't deploy" is a hypothesis, not a fact — confirm the artifact is live before changing anything. The live URL plus the platform's deployment API are the ground truth, and both are reachable without dashboard access. Once-per-session UI is the most common false alarm behind "my change disappeared."
