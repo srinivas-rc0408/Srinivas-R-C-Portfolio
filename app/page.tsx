@@ -30,6 +30,10 @@ import { useScrollStore } from "@/src/contexts/ScrollStore";
    entirely via sessionStorage.                                     */
 const LOADER_MESSAGES = ["Spinning up the web…", "Anchoring web lines…", "Suiting up…"];
 type LoaderState = "pending" | "visible" | "leaving" | "done";
+/* Two-phase boot: a gold lightning-bolt trace first, then the arc-reactor
+   loader. BOLT_MS is how long phase 1 holds before crossfading to phase 2. */
+type BootPhase = "bolt" | "reactor";
+const BOLT_MS = 1200;
 
 /* Shared styling for the three action cards — one red-glow language across
    all of them (pulse staggered per-card via inline animationDelay). */
@@ -58,6 +62,7 @@ export default function Home() {
     typeof window !== "undefined" && sessionStorage.getItem("first-load-done") ? "done" : "pending"
   );
   const [msgIndex, setMsgIndex] = useState(0);
+  const [bootPhase, setBootPhase] = useState<BootPhase>("bolt");
   const heroLive = loaderState === "leaving" || loaderState === "done";
 
   // First visit: show the loader on the next frame after mount.
@@ -83,7 +88,7 @@ export default function Home() {
     // sees it. Reduced motion skips the floor. The 4s cap still fails open.
     const minTime = reduceMotion
       ? Promise.resolve()
-      : new Promise<void>((resolve) => setTimeout(resolve, 1800));
+      : new Promise<void>((resolve) => setTimeout(resolve, 2400));
     const cap = new Promise<void>((resolve) => setTimeout(resolve, 4000));
     Promise.race([Promise.all([entryLoaded, fontsReady, minTime]), cap]).then(() => {
       if (cancelled) return;
@@ -109,6 +114,19 @@ export default function Home() {
     const t = setInterval(() => setMsgIndex((i) => i + 1), 1100);
     return () => clearInterval(t);
   }, [loaderState]);
+
+  // Two-phase boot: play the gold lightning bolt first, then crossfade to the
+  // arc-reactor loader. Reduced motion skips straight to the reactor phase.
+  useEffect(() => {
+    if (loaderState !== "visible") return;
+    if (reduceMotion) {
+      setBootPhase("reactor");
+      return;
+    }
+    setBootPhase("bolt");
+    const t = setTimeout(() => setBootPhase("reactor"), BOLT_MS);
+    return () => clearTimeout(t);
+  }, [loaderState, reduceMotion]);
 
   /* ── Idle prefetch once the hero is interactive: warm all carousel
      images and the /projects + /details route chunks. ── */
@@ -158,75 +176,110 @@ export default function Home() {
       {(loaderState === "visible" || loaderState === "leaving") && (
         <motion.div
           aria-hidden
-          className="pointer-events-none fixed inset-0 z-[200] flex flex-col items-center justify-center bg-[#050508]"
+          className="pointer-events-none fixed inset-0 z-[200] flex items-center justify-center bg-[#050508]"
           animate={{ opacity: loaderState === "leaving" ? 0 : 1 }}
           transition={{ duration: 0.3 }}
         >
-          {/* Web line draws down from the ceiling to the logo (transform-only) */}
-          <motion.div
-            className="absolute left-1/2 top-0 w-[1.5px] -translate-x-1/2"
-            style={{
-              height: "calc(50% - 56px)",
-              transformOrigin: "top",
-              background: "linear-gradient(to top, rgba(255,255,255,0.9), rgba(255,255,255,0.4))",
-            }}
-            initial={reduceMotion ? false : { scaleY: 0 }}
-            animate={{ scaleY: 1 }}
-            transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1] }}
-          />
-          {/* Arc-reactor boot ring — gold/red energy tracing that powers up
-              behind the SRC wordmark (the wordmark sits in the core, Iron-Man
-              chest style). Structural rings stay for reduced motion; only the
-              looping energy trace is gated off. */}
-          <motion.div
-            className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2"
-            initial={reduceMotion ? false : { opacity: 0, scale: 0.7 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: reduceMotion ? 0 : 0.35, duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
-          >
-            <div className="relative" style={{ width: 260, height: 260 }}>
-              <div
-                className="absolute inset-10 rounded-full"
-                style={{ background: "radial-gradient(circle, rgba(220,38,38,0.18), transparent 70%)" }}
-              />
-              <div className="absolute inset-0 rounded-full border border-red-500/15" />
-              <div className="absolute inset-[26px] rounded-full border border-yellow-500/10" />
-              {!reduceMotion && (
-                <div className="absolute inset-0">
+          <AnimatePresence>
+            {bootPhase === "bolt" ? (
+              /* ── Phase 1 — gold lightning-bolt energy trace ── */
+              <motion.div
+                key="bolt"
+                className="absolute inset-0 flex items-center justify-center"
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 1.12 }}
+                transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
+              >
+                <div className="relative">
+                  <div
+                    aria-hidden
+                    className="pointer-events-none absolute -inset-12 rounded-full blur-2xl"
+                    style={{ background: "radial-gradient(circle, rgba(241,196,15,0.22), transparent 70%)" }}
+                  />
                   <GradientTracing
-                    width={260}
-                    height={260}
-                    strokeWidth={2}
-                    path="M130,18 a112,112 0 1,1 0,224 a112,112 0 1,1 0,-224"
-                    gradientColors={["#F1C40F", "#DC2626", "#F1C40F"]}
-                    animationDuration={1.6}
+                    width={200}
+                    height={200}
+                    strokeWidth={3}
+                    path="M100,0 L75,75 L125,75 L50,200 L100,100 L50,100 L100,0"
+                    gradientColors={["#F1C40F", "#F1C40F", "#E67E22"]}
+                    animationDuration={1.4}
                   />
                 </div>
-              )}
-            </div>
-          </motion.div>
-          {/* SRC wordmark — same composition as the navbar trigger */}
-          <motion.div
-            className="relative flex items-center justify-center"
-            initial={reduceMotion ? false : { opacity: 0, scale: 0.85 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: reduceMotion ? 0 : 0.5, duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
-          >
-            <span className="relative flex items-center justify-center text-red-500">
-              <Zap size={40} className="absolute -left-[18px] text-yellow-500 opacity-80" />
-              <span className="text-6xl font-black italic tracking-tighter">S</span>
-            </span>
-            <span className="text-6xl font-black italic tracking-tighter text-white">RC</span>
-          </motion.div>
-          <motion.p
-            key={msgIndex}
-            className="mt-8 text-[11px] font-semibold uppercase tracking-[0.3em] text-white/40"
-            initial={reduceMotion ? false : { opacity: 0, y: 6 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.35 }}
-          >
-            {LOADER_MESSAGES[msgIndex % LOADER_MESSAGES.length]}
-          </motion.p>
+              </motion.div>
+            ) : (
+              /* ── Phase 2 — arc-reactor boot ring + gold wordmark ── */
+              <motion.div
+                key="reactor"
+                className="absolute inset-0 flex flex-col items-center justify-center"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.4 }}
+              >
+                {/* Web line draws down from the ceiling to the logo */}
+                <motion.div
+                  className="absolute left-1/2 top-0 w-[1.5px] -translate-x-1/2"
+                  style={{
+                    height: "calc(50% - 56px)",
+                    transformOrigin: "top",
+                    background: "linear-gradient(to top, rgba(255,255,255,0.9), rgba(255,255,255,0.4))",
+                  }}
+                  initial={reduceMotion ? false : { scaleY: 0 }}
+                  animate={{ scaleY: 1 }}
+                  transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+                />
+                {/* Arc-reactor boot ring — gold/red energy tracing behind the
+                    wordmark (which sits in the core, Iron-Man chest style). */}
+                <motion.div
+                  className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2"
+                  initial={reduceMotion ? false : { opacity: 0, scale: 0.7 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ delay: reduceMotion ? 0 : 0.1, duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+                >
+                  <div className="relative" style={{ width: 260, height: 260 }}>
+                    <div
+                      className="absolute inset-10 rounded-full"
+                      style={{ background: "radial-gradient(circle, rgba(220,38,38,0.18), transparent 70%)" }}
+                    />
+                    <div className="absolute inset-0 rounded-full border border-red-500/15" />
+                    <div className="absolute inset-[26px] rounded-full border border-yellow-500/10" />
+                    {!reduceMotion && (
+                      <div className="absolute inset-0">
+                        <GradientTracing
+                          width={260}
+                          height={260}
+                          strokeWidth={2}
+                          path="M130,18 a112,112 0 1,1 0,224 a112,112 0 1,1 0,-224"
+                          gradientColors={["#F1C40F", "#DC2626", "#F1C40F"]}
+                          animationDuration={1.6}
+                        />
+                      </div>
+                    )}
+                  </div>
+                </motion.div>
+                {/* Wordmark — gold ⚡.RC (matches the navbar) */}
+                <motion.div
+                  className="relative flex items-center justify-center"
+                  initial={reduceMotion ? false : { opacity: 0, scale: 0.85 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ delay: reduceMotion ? 0 : 0.25, duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+                  style={{ color: "#F1C40F" }}
+                >
+                  <Zap size={48} strokeWidth={2} fill="#F1C40F" className="-mr-1" />
+                  <span className="text-6xl font-black italic tracking-tighter">.RC</span>
+                </motion.div>
+                <motion.p
+                  key={msgIndex}
+                  className="mt-8 text-[11px] font-semibold uppercase tracking-[0.3em] text-white/40"
+                  initial={reduceMotion ? false : { opacity: 0, y: 6 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.35 }}
+                >
+                  {LOADER_MESSAGES[msgIndex % LOADER_MESSAGES.length]}
+                </motion.p>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </motion.div>
       )}
 

@@ -47,19 +47,18 @@ export default function Navbar({ onMenuTrigger }: NavbarProps) {
             </motion.button>
           )}
 
-          {/* Menu Trigger — SRC wordmark (lightning S + RC) */}
+          {/* Menu Trigger — golden ⚡.RC wordmark */}
           <motion.button
             onClick={onMenuTrigger}
             aria-label="Open menu — Srinivas R C's Portfolio"
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
-            className="group relative flex items-center justify-center gap-[1px] rounded-xl pl-3 pr-2.5 py-2 transition-all duration-300 hover:shadow-[0_0_20px_rgba(220,38,38,0.5)] bg-white/5 hover:bg-white/10"
+            className="group relative flex items-center justify-center rounded-xl px-3 py-2 transition-all duration-300 hover:shadow-[0_0_20px_rgba(241,196,15,0.4)] bg-white/5 hover:bg-white/10"
           >
-            <span className="relative flex items-center justify-center text-red-500">
-              <Zap size={18} className="absolute -left-[9px] text-yellow-500 opacity-80" />
-              <span className="font-black text-xl italic tracking-tighter">S</span>
+            <span className="relative flex items-center" style={{ color: "#F1C40F" }}>
+              <Zap size={22} strokeWidth={2} fill="#F1C40F" className="-mr-0.5 drop-shadow-[0_0_6px_rgba(241,196,15,0.45)]" />
+              <span className="font-black text-xl italic tracking-tighter">.RC</span>
             </span>
-            <span className="font-black text-xl italic tracking-tighter text-white">RC</span>
 
             {/* Hover tooltip (desktop) */}
             <span

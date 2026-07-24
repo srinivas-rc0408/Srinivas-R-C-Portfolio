@@ -15,10 +15,13 @@ export default function Icon() {
           justifyContent: "center",
           background: "#050508",
           borderRadius: "50%",
-          border: "1px solid #DC2626",
+          border: "1px solid #F1C40F",
         }}
       >
-        <span style={{ color: "#DC2626", fontSize: 20, fontWeight: 700 }}>S</span>
+        {/* Gold lightning bolt (lucide Zap) — matches the ⚡.RC wordmark */}
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="#F1C40F">
+          <path d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z" />
+        </svg>
       </div>
     ),
     size
