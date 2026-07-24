@@ -15,8 +15,17 @@ import { checkFeedbackRateLimit, getClientIp } from "@/lib/rateLimit";
    ═══════════════════════════════════════════════════════════════ */
 
 const feedbackSchema = z.object({
-  email: z.string().email("Enter a valid email address."),
-  message: z.string().min(1, "Message is required.").max(2000, "Message must be 2000 characters or fewer."),
+  name: z.string().trim().min(2, "Please enter your name.").max(80, "Name is too long."),
+  // Optional — an empty string or omitted is fine; if present it must be valid.
+  email: z
+    .union([z.literal(""), z.string().trim().email("Enter a valid email address.")])
+    .optional()
+    .transform((v) => (v ? v : null)),
+  message: z
+    .string()
+    .trim()
+    .min(5, "Please share a bit more detail (at least 5 characters).")
+    .max(2000, "Message must be 2000 characters or fewer."),
 });
 
 type SubmitFeedbackResult = { ok: true } | { ok: false; status: number; error: string };

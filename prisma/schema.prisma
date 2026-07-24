@@ -122,7 +122,8 @@ model GameScore {
 
 model Feedback {
   id        String   @id @default(uuid())
-  email     String
+  name      String   @default("")
+  email     String?
   message   String
   isRead    Boolean  @default(false)
   isFlagged Boolean  @default(false)

@@ -11,7 +11,8 @@ import { Mail, Clock, Flag, CheckCircle2, Circle } from "lucide-react";
 
 interface FeedbackRow {
   id: string;
-  email: string;
+  name: string;
+  email: string | null;
   message: string;
   isRead: boolean;
   isFlagged: boolean;
@@ -56,7 +57,15 @@ export default function FeedbackInbox() {
             >
               <div className="flex items-start justify-between gap-4">
                 <div className="flex flex-col gap-1">
-                  <span className="text-sm font-semibold text-white">{item.email}</span>
+                  <span className="text-sm font-semibold text-white">{item.name || "Anonymous"}</span>
+                  {item.email && (
+                    <a
+                      href={`mailto:${item.email}`}
+                      className="text-xs text-zinc-400 transition-colors hover:text-red-400"
+                    >
+                      {item.email}
+                    </a>
+                  )}
                   <span className="flex items-center gap-1.5 text-[10px] text-zinc-500">
                     <Clock size={11} /> {new Date(item.createdAt).toLocaleString()}
                   </span>

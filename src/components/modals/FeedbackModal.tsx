@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Mail, MessageSquare, Loader2, CheckCircle2 } from "lucide-react";
+import { X, User, Mail, MessageSquare, Loader2, CheckCircle2 } from "lucide-react";
 
 /* ═══════════════════════════════════════════════════════════════
    FEEDBACK MODAL
@@ -17,6 +17,7 @@ interface FeedbackModalProps {
 const MESSAGE_MAX = 2000;
 
 export default function FeedbackModal({ isOpen, onClose }: FeedbackModalProps) {
+  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
@@ -35,6 +36,7 @@ export default function FeedbackModal({ isOpen, onClose }: FeedbackModalProps) {
   const handleClose = () => {
     onClose();
     setTimeout(() => {
+      setName("");
       setEmail("");
       setMessage("");
       setError("");
@@ -50,7 +52,7 @@ export default function FeedbackModal({ isOpen, onClose }: FeedbackModalProps) {
       const res = await fetch("/api/feedback", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, message }),
+        body: JSON.stringify({ name, email, message }),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -120,14 +122,26 @@ export default function FeedbackModal({ isOpen, onClose }: FeedbackModalProps) {
                 </div>
 
                 <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-                  <div className="relative group">
+                  {/* Name — required */}
+                  <div className="group relative">
+                    <User size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500 transition-colors group-focus-within:text-red-500" />
+                    <input
+                      type="text"
+                      required
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                      placeholder="Your Name"
+                      className="w-full rounded-xl border border-white/10 bg-black/50 px-11 py-3.5 text-sm text-white placeholder:text-zinc-500 outline-none transition-colors focus:border-red-500"
+                    />
+                  </div>
+                  {/* Email — optional */}
+                  <div className="group relative">
                     <Mail size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500 transition-colors group-focus-within:text-red-500" />
                     <input
                       type="email"
-                      required
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      placeholder="Email Address"
+                      placeholder="Email (optional)"
                       className="w-full rounded-xl border border-white/10 bg-black/50 px-11 py-3.5 text-sm text-white placeholder:text-zinc-500 outline-none transition-colors focus:border-red-500"
                     />
                   </div>
