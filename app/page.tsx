@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
+import { motion, useReducedMotion } from "framer-motion";
 import {
   Menu,
   FileText,
@@ -24,16 +24,15 @@ import { HEROES } from "@/lib/hero-showcase";
 import { useScrollStore } from "@/src/contexts/ScrollStore";
 
 /* ── First-load screen ────────────────────────────────────────────
-   Gates ONLY on real critical assets: 1.png + fonts. No artificial
-   minimum beyond the 300ms dismiss fade; a 4s cap fails open so a
-   hung asset can never trap the visitor. Repeat visits skip it
-   entirely via sessionStorage.                                     */
-const LOADER_MESSAGES = ["Spinning up the web…", "Anchoring web lines…", "Suiting up…"];
+   A gold lightning-bolt intro. Gates on real critical assets (entry
+   image + fonts) with a ~2s floor so it plays fully, and a 4s cap that
+   fails open so a hung asset can never trap the visitor. Plays on every
+   full page load (see introPlayed below).                            */
 type LoaderState = "pending" | "visible" | "leaving" | "done";
-/* Two-phase boot: a gold lightning-bolt trace first, then the arc-reactor
-   loader. BOLT_MS is how long phase 1 holds before crossfading to phase 2. */
-type BootPhase = "bolt" | "reactor";
-const BOLT_MS = 1200;
+/* Module-level, so it resets on every full page load (new JS context) but
+   survives client-side navigation. The gold-bolt intro therefore plays on
+   each reload/direct visit, but not when navigating back to home in-app. */
+let introPlayed = false;
 
 /* Shared styling for the three action cards — one red-glow language across
    all of them (pulse staggered per-card via inline animationDelay). */
@@ -55,14 +54,12 @@ export default function Home() {
 
   const scrollToTop = () => window.scrollTo({ top: 0, behavior: "smooth" });
 
-  /* ── First-load screen state. Repeat visits (sessionStorage) start at
-     "done" and never see the loader; SSR starts "pending" (renders no
-     loader either, so hydration output matches). ── */
+  /* ── First-load screen state. `introPlayed` resets each full page load, so
+     the intro shows on every reload; SSR starts "pending" (renders no loader,
+     so hydration output matches). ── */
   const [loaderState, setLoaderState] = useState<LoaderState>(() =>
-    typeof window !== "undefined" && sessionStorage.getItem("first-load-done") ? "done" : "pending"
+    typeof window !== "undefined" && introPlayed ? "done" : "pending"
   );
-  const [msgIndex, setMsgIndex] = useState(0);
-  const [bootPhase, setBootPhase] = useState<BootPhase>("bolt");
   const heroLive = loaderState === "leaving" || loaderState === "done";
 
   // First visit: show the loader on the next frame after mount.
@@ -83,16 +80,16 @@ export default function Home() {
       img.src = HEROES[0].character; // Spider-Man opens the showcase
     });
     const fontsReady: Promise<unknown> = document.fonts?.ready ?? Promise.resolve();
-    // Floor the display time so the arc-reactor boot actually plays and feels
-    // deliberate — otherwise cached assets dismiss it in ~100ms and no one
-    // sees it. Reduced motion skips the floor. The 4s cap still fails open.
+    // Floor the display time (~2s) so the lightning-bolt intro plays fully
+    // instead of flashing by on cached loads. Reduced motion skips the floor.
+    // The 4s cap still fails open so a hung asset can never trap the visitor.
     const minTime = reduceMotion
       ? Promise.resolve()
-      : new Promise<void>((resolve) => setTimeout(resolve, 2400));
+      : new Promise<void>((resolve) => setTimeout(resolve, 2000));
     const cap = new Promise<void>((resolve) => setTimeout(resolve, 4000));
     Promise.race([Promise.all([entryLoaded, fontsReady, minTime]), cap]).then(() => {
       if (cancelled) return;
-      sessionStorage.setItem("first-load-done", "1");
+      introPlayed = true;
       setLoaderState("leaving");
     });
     return () => {
@@ -108,36 +105,19 @@ export default function Home() {
     return () => clearTimeout(t);
   }, [loaderState]);
 
-  // Rotating message while visible.
-  useEffect(() => {
-    if (loaderState !== "visible") return;
-    const t = setInterval(() => setMsgIndex((i) => i + 1), 1100);
-    return () => clearInterval(t);
-  }, [loaderState]);
-
-  // Two-phase boot: play the gold lightning bolt first, then crossfade to the
-  // arc-reactor loader. Reduced motion skips straight to the reactor phase.
-  useEffect(() => {
-    if (loaderState !== "visible") return;
-    if (reduceMotion) {
-      setBootPhase("reactor");
-      return;
-    }
-    setBootPhase("bolt");
-    const t = setTimeout(() => setBootPhase("reactor"), BOLT_MS);
-    return () => clearTimeout(t);
-  }, [loaderState, reduceMotion]);
-
-  /* ── Idle prefetch once the hero is interactive: warm all carousel
-     images and the /projects + /details route chunks. ── */
+  /* ── Idle prefetch once the hero is interactive: warm the /projects +
+     /details route chunks AND the resume (doc metadata + the PDF bytes), so
+     "View Resume" opens instantly. ── */
   useEffect(() => {
     if (loaderState !== "done") return;
     const idle = window.requestIdleCallback ?? ((cb: () => void) => window.setTimeout(cb, 300));
     const cancelIdle = window.cancelIdleCallback ?? window.clearTimeout;
     const id = idle(() => {
-      // showcase preloads its own 8 hero images; just warm the routes here
       router.prefetch("/projects");
       router.prefetch("/details");
+      // Warm the resume so the modal paints immediately on first click.
+      fetch("/api/documents/resume").catch(() => {});
+      fetch("/documents/resume.pdf").catch(() => {});
     });
     return () => cancelIdle(id as number);
   }, [loaderState, router]);
@@ -180,106 +160,39 @@ export default function Home() {
           animate={{ opacity: loaderState === "leaving" ? 0 : 1 }}
           transition={{ duration: 0.3 }}
         >
-          <AnimatePresence>
-            {bootPhase === "bolt" ? (
-              /* ── Phase 1 — gold lightning-bolt energy trace ── */
+          {/* ── Gold lightning-bolt intro — the only entry animation ── */}
+          {reduceMotion ? (
+            <Zap
+              size={128}
+              fill="#F1C40F"
+              color="#F1C40F"
+              strokeWidth={1.25}
+              className="drop-shadow-[0_0_28px_rgba(241,196,15,0.5)]"
+            />
+          ) : (
+            <div className="relative flex items-center justify-center">
+              <div
+                aria-hidden
+                className="pointer-events-none absolute -inset-16 rounded-full blur-3xl"
+                style={{ background: "radial-gradient(circle, rgba(241,196,15,0.28), transparent 70%)" }}
+              />
               <motion.div
-                key="bolt"
-                className="absolute inset-0 flex items-center justify-center"
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 1.12 }}
-                transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
+                initial={{ opacity: 0, scale: 0.85 }}
+                animate={{ opacity: 1, scale: 1.4 }}
+                transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
               >
-                <div className="relative">
-                  <div
-                    aria-hidden
-                    className="pointer-events-none absolute -inset-12 rounded-full blur-2xl"
-                    style={{ background: "radial-gradient(circle, rgba(241,196,15,0.22), transparent 70%)" }}
-                  />
-                  <GradientTracing
-                    width={200}
-                    height={200}
-                    strokeWidth={3}
-                    path="M100,0 L75,75 L125,75 L50,200 L100,100 L50,100 L100,0"
-                    gradientColors={["#F1C40F", "#F1C40F", "#E67E22"]}
-                    animationDuration={1.4}
-                  />
-                </div>
-              </motion.div>
-            ) : (
-              /* ── Phase 2 — arc-reactor boot ring + gold wordmark ── */
-              <motion.div
-                key="reactor"
-                className="absolute inset-0 flex flex-col items-center justify-center"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ duration: 0.4 }}
-              >
-                {/* Web line draws down from the ceiling to the logo */}
-                <motion.div
-                  className="absolute left-1/2 top-0 w-[1.5px] -translate-x-1/2"
-                  style={{
-                    height: "calc(50% - 56px)",
-                    transformOrigin: "top",
-                    background: "linear-gradient(to top, rgba(255,255,255,0.9), rgba(255,255,255,0.4))",
-                  }}
-                  initial={reduceMotion ? false : { scaleY: 0 }}
-                  animate={{ scaleY: 1 }}
-                  transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+                <GradientTracing
+                  width={200}
+                  height={200}
+                  strokeWidth={3}
+                  baseColor="#F1C40F"
+                  path="M100,0 L75,75 L125,75 L50,200 L100,100 L50,100 L100,0"
+                  gradientColors={["#F1C40F", "#F1C40F", "#E67E22"]}
+                  animationDuration={1.0}
                 />
-                {/* Arc-reactor boot ring — gold/red energy tracing behind the
-                    wordmark (which sits in the core, Iron-Man chest style). */}
-                <motion.div
-                  className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2"
-                  initial={reduceMotion ? false : { opacity: 0, scale: 0.7 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  transition={{ delay: reduceMotion ? 0 : 0.1, duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-                >
-                  <div className="relative" style={{ width: 260, height: 260 }}>
-                    <div
-                      className="absolute inset-10 rounded-full"
-                      style={{ background: "radial-gradient(circle, rgba(220,38,38,0.18), transparent 70%)" }}
-                    />
-                    <div className="absolute inset-0 rounded-full border border-red-500/15" />
-                    <div className="absolute inset-[26px] rounded-full border border-yellow-500/10" />
-                    {!reduceMotion && (
-                      <div className="absolute inset-0">
-                        <GradientTracing
-                          width={260}
-                          height={260}
-                          strokeWidth={2}
-                          path="M130,18 a112,112 0 1,1 0,224 a112,112 0 1,1 0,-224"
-                          gradientColors={["#F1C40F", "#DC2626", "#F1C40F"]}
-                          animationDuration={1.6}
-                        />
-                      </div>
-                    )}
-                  </div>
-                </motion.div>
-                {/* Wordmark — gold ⚡.RC (matches the navbar) */}
-                <motion.div
-                  className="relative flex items-center justify-center"
-                  initial={reduceMotion ? false : { opacity: 0, scale: 0.85 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  transition={{ delay: reduceMotion ? 0 : 0.25, duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
-                  style={{ color: "#F1C40F" }}
-                >
-                  <Zap size={48} strokeWidth={2} fill="#F1C40F" className="-mr-1" />
-                  <span className="text-6xl font-black italic tracking-tighter">.RC</span>
-                </motion.div>
-                <motion.p
-                  key={msgIndex}
-                  className="mt-8 text-[11px] font-semibold uppercase tracking-[0.3em] text-white/40"
-                  initial={reduceMotion ? false : { opacity: 0, y: 6 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.35 }}
-                >
-                  {LOADER_MESSAGES[msgIndex % LOADER_MESSAGES.length]}
-                </motion.p>
               </motion.div>
-            )}
-          </AnimatePresence>
+            </div>
+          )}
         </motion.div>
       )}
 
@@ -401,11 +314,11 @@ export default function Home() {
                 not demos.
               </motion.p>
 
-              {/* Action Buttons — Sharp rectangles */}
+              {/* Action Buttons — always side by side, equal width, every view */}
               <motion.div
                 id="hero-actions"
                 variants={itemVariants}
-                className="flex flex-wrap gap-4"
+                className="flex w-full max-w-md gap-3"
               >
                 {/* Primary — red accent glass */}
                 <motion.button
@@ -413,18 +326,18 @@ export default function Home() {
                   onClick={() => setResumeOpen(true)}
                   whileHover={{ y: -2 }}
                   whileTap={{ scale: 0.95 }}
-                  className="group flex cursor-pointer items-center gap-2.5 rounded-xl border border-red-500/40 bg-red-600/10 px-6 py-3.5 text-sm font-semibold text-white backdrop-blur-xl transition-all duration-300 ease-out hover:border-red-500/70 hover:bg-red-600/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500/50 md:px-10 md:py-4"
+                  className="group flex flex-1 cursor-pointer items-center justify-center gap-2 rounded-xl border border-red-500/40 bg-red-600/10 px-4 py-3.5 text-sm font-semibold text-white backdrop-blur-xl transition-all duration-300 ease-out hover:border-red-500/70 hover:bg-red-600/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500/50"
                 >
                   <FileText size={16} strokeWidth={1.5} className="text-red-400 transition-transform duration-300 group-hover:scale-110" />
                   <span>View Resume</span>
                 </motion.button>
                 {/* Secondary — neutral glass */}
-                <Link href="/details">
+                <Link href="/details" className="flex-1">
                   <motion.button
                     id="btn-details"
                     whileHover={{ y: -2 }}
                     whileTap={{ scale: 0.95 }}
-                    className="group flex cursor-pointer items-center gap-2.5 rounded-xl border border-white/10 bg-white/5 px-6 py-3.5 text-sm font-semibold text-white/80 backdrop-blur-xl transition-all duration-300 ease-out hover:border-white/25 hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/30 md:px-10 md:py-4"
+                    className="group flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-3.5 text-sm font-semibold text-white/80 backdrop-blur-xl transition-all duration-300 ease-out hover:border-white/25 hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/30"
                   >
                     <Info size={16} strokeWidth={1.5} className="transition-transform duration-300 group-hover:scale-110" />
                     <span>View Details</span>
@@ -474,12 +387,39 @@ export default function Home() {
           {/* ── HERO SHOWCASE — bg wash + logo watermark + character ── */}
           {/* (the "Hi, there!" cloud now lives with the footer Spidey) */}
           <HeroShowcase hero={activeHero} isStatic={showcaseStatic} live={heroLive} />
+
+          {/* ── Scroll cue — anchors the lower hero + smooth-scrolls down ── */}
+          {heroLive && (
+            <motion.button
+              type="button"
+              aria-label="Scroll down"
+              onClick={() =>
+                document.getElementById("explore-section")?.scrollIntoView({ behavior: "smooth", block: "start" })
+              }
+              className="group absolute bottom-8 left-6 z-10 flex items-center gap-3 md:left-16 lg:left-24"
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.8, duration: 0.6 }}
+              whileTap={{ scale: 0.92 }}
+            >
+              <span className="text-[10px] font-semibold uppercase tracking-[0.35em] text-white/30 transition-colors duration-300 group-hover:text-white/60">
+                Scroll
+              </span>
+              <span className="flex h-9 w-5 items-start justify-center rounded-full border border-white/15 p-1 transition-colors duration-300 group-hover:border-white/40">
+                <motion.span
+                  className="h-1.5 w-1.5 rounded-full bg-white/50"
+                  animate={reduceMotion ? undefined : { y: [0, 12, 0], opacity: [1, 0.2, 1] }}
+                  transition={{ duration: 1.6, repeat: Infinity, ease: "easeInOut" }}
+                />
+              </span>
+            </motion.button>
+          )}
         </section>
 
         {/* ═══════════════════════════════════════════════ */}
         {/* ACTION SECTION                                 */}
         {/* ═══════════════════════════════════════════════ */}
-        <section className="relative min-h-screen w-full flex flex-col justify-center items-center py-24 bg-transparent z-20">
+        <section id="explore-section" className="relative min-h-screen w-full flex flex-col justify-center items-center py-24 bg-transparent z-20">
           {/* ── Sticky mini-header ── */}
           <div className="sticky top-[72px] z-30 mb-12 flex w-full items-center justify-between border-b border-white/5 bg-black/60 px-6 py-4 backdrop-blur-xl md:px-12">
             <div className="flex items-center gap-3 text-xs font-bold uppercase tracking-widest text-zinc-300">

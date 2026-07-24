@@ -100,10 +100,21 @@ export default function Footer() {
               aria-hidden
               tabIndex={-1}
               onClick={() => setIsFeedbackOpen(true)}
-              whileHover={{ scale: 1.03 }}
+              whileHover={{ scale: 1.04, y: -2 }}
               whileTap={{ scale: 0.95 }}
-              className="group pointer-events-auto relative flex flex-col items-start gap-0.5 rounded-2xl bg-white px-4 py-2.5 text-left shadow-[0_14px_40px_-6px_rgba(0,0,0,0.55)] transition-shadow duration-300 hover:shadow-[0_16px_44px_-4px_rgba(220,38,38,0.45)]"
+              className="group pointer-events-auto relative flex flex-col items-start rounded-2xl bg-white px-4 py-2.5 text-left shadow-[0_18px_50px_-8px_rgba(0,0,0,0.6)] transition-shadow duration-300 hover:shadow-[0_22px_56px_-6px_rgba(220,38,38,0.5)]"
             >
+              {/* live pulse dot — signals it's interactive */}
+              <span aria-hidden className="absolute -right-1 -top-1 flex h-3 w-3">
+                {!reduceMotion && (
+                  <motion.span
+                    className="absolute inline-flex h-full w-full rounded-full bg-red-500"
+                    animate={{ scale: [1, 1.9], opacity: [0.55, 0] }}
+                    transition={{ duration: 1.6, repeat: Infinity, ease: "easeOut" }}
+                  />
+                )}
+                <span className="relative inline-flex h-3 w-3 rounded-full bg-red-500 ring-2 ring-white" />
+              </span>
               <span className="flex items-center gap-1.5 whitespace-nowrap text-[15px] font-extrabold leading-tight tracking-tight text-zinc-900">
                 Hi, there!
                 <motion.span
@@ -116,7 +127,7 @@ export default function Footer() {
                   👋
                 </motion.span>
               </span>
-              <span className="flex items-center gap-1 whitespace-nowrap text-[12px] font-bold leading-tight text-red-600">
+              <span className="mt-1 flex items-center gap-1 whitespace-nowrap text-[12px] font-bold leading-tight text-red-600">
                 Leave a feedback
                 <span aria-hidden className="transition-transform duration-300 group-hover:translate-x-1">
                   &rarr;

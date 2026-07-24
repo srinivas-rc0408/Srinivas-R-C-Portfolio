@@ -100,8 +100,10 @@ export default function Navbar({ onMenuTrigger }: NavbarProps) {
           <motion.button
             onClick={() => setIsSignInOpen(true)}
             aria-label="Sign in"
+            whileHover={{ scale: 1.05, y: -1 }}
             whileTap={{ scale: 0.95 }}
-            className="flex items-center gap-2 rounded-lg bg-white/10 px-5 py-2 text-xs font-semibold uppercase tracking-widest text-white transition-colors duration-300 hover:bg-white hover:text-black shadow-lg"
+            transition={{ type: "spring", stiffness: 400, damping: 20 }}
+            className="flex items-center gap-2 rounded-lg bg-white/10 px-5 py-2 text-xs font-semibold uppercase tracking-widest text-white shadow-lg backdrop-blur-md transition-colors duration-300 hover:bg-white hover:text-black focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40"
           >
             <User size={14} />
             <span className="hidden sm:inline">{firstName || "Sign In"}</span>
